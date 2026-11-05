@@ -2,9 +2,9 @@ export type Funcao = 'financeiro' | 'multas' | 'ingressos' | 'portaria'
 
 export const FUNCOES: { id: Funcao; nome: string; desc: string }[] = [
   { id: 'multas', nome: 'Escala e multas', desc: 'Cria tarefas, decide justificativas e define as multas.' },
-  { id: 'financeiro', nome: 'Financeiro', desc: 'Cobranças e contas (chega na próxima fase).' },
-  { id: 'ingressos', nome: 'Ingressos', desc: 'Confirma pagamentos de ingressos (fase de festas).' },
-  { id: 'portaria', nome: 'Portaria', desc: 'Dá baixa nos ingressos na entrada (fase de festas).' },
+  { id: 'financeiro', nome: 'Financeiro', desc: 'Cobranças, contas e lançamentos da república.' },
+  { id: 'ingressos', nome: 'Ingressos', desc: 'Configura as vendas e confirma pagamentos de ingressos.' },
+  { id: 'portaria', nome: 'Portaria', desc: 'Dá baixa nos ingressos na entrada da festa.' },
 ]
 
 export interface Perfil {
@@ -90,3 +90,17 @@ export interface CobrancaItem { id: string; cobranca_id: string; membro_id: stri
 export interface MinhaCobranca { item_id: string; titulo: string; valor: number; vencimento: string | null; pago: boolean; pago_em: string | null }
 
 export interface FestaCal { id: string; republica_id: string; republica: string; data: string; titulo: string; local: string | null; minha: boolean; espacamento_dias: number }
+
+export interface FestaIng {
+  id: string; data: string; titulo: string; local: string | null; ingresso_preco: number | null; pix_chave: string | null
+  contato_whatsapp: string | null; ingressos_abertos: boolean; limite_ingressos: number | null; conta_id: string | null
+  pendentes: number; vendidos: number; usados: number
+}
+export interface IngressoItem {
+  id: string; comprador: string; contato: string | null; vendedor: string | null; codigo: string
+  status: 'pendente' | 'pago' | 'usado' | 'cancelado'; valor: number; pago_em: string | null; usado_em: string | null; created_at: string
+}
+export interface MeuIngresso {
+  id: string; festa_id: string; festa: string; data: string; comprador: string; codigo: string
+  status: 'pendente' | 'pago' | 'usado' | 'cancelado'; valor: number; pix_chave: string | null; contato_whatsapp: string | null
+}

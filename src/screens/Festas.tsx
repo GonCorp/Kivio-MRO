@@ -4,16 +4,29 @@ import { useApp } from '../lib/contexto'
 import type { FestaCal } from '../lib/tipos'
 import { dataCurta, diasNoMes, diffDias, diaSemana, hoje, nomeDiaExtenso, nomeMes, primeiroDoMes, mesAnterior, mesSeguinte, somarDias } from '../lib/datas'
 import { Campo, Folha } from '../components'
+import Ingressos, { Portaria } from './Ingressos'
 
-type Sub = 'calendario'
+type Sub = 'calendario' | 'ingressos' | 'portaria'
 
 export default function Festas() {
+  const app = useApp()
+  const temIng = app.tem('ingressos')
+  const abas: [Sub, string][] = [['calendario', 'Calendário']]
+  if (temIng) abas.push(['ingressos', 'Ingressos'])
+  if (temIng && app.funcao('portaria')) abas.push(['portaria', 'Portaria'])
   const [sub, setSub] = useState<Sub>('calendario')
+  const atual = abas.some(([id]) => id === sub) ? sub : 'calendario'
   return (
     <>
       <h1>Festas</h1>
-      {sub === 'calendario' && <Calendario />}
-      <span hidden>{setSub.length}</span>
+      {abas.length > 1 && (
+        <div className="seg" role="group" aria-label="Seções">
+          {abas.map(([id, nome]) => <button key={id} aria-pressed={atual === id} onClick={() => setSub(id)}>{nome}</button>)}
+        </div>
+      )}
+      {atual === 'calendario' && <Calendario />}
+      {atual === 'ingressos' && <Ingressos />}
+      {atual === 'portaria' && <Portaria />}
     </>
   )
 }

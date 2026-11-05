@@ -18,10 +18,10 @@ export const RECURSOS: { id: string; nome: string; pronto: boolean }[] = [
   { id: 'escala', nome: 'Escala de tarefas', pronto: true },
   { id: 'multas', nome: 'Missões e multas (depende da escala)', pronto: true },
   { id: 'financas', nome: 'Finanças da casa', pronto: true },
-  { id: 'relatorios', nome: 'Relatórios', pronto: false },
+  { id: 'relatorios', nome: 'Relatórios', pronto: true },
   { id: 'calendario_ver', nome: 'Consultar calendário de festas', pronto: true },
   { id: 'calendario', nome: 'Calendário de festas (marcar festa)', pronto: true },
-  { id: 'ingressos', nome: 'Ingressos e portaria', pronto: false },
+  { id: 'ingressos', nome: 'Ingressos e portaria', pronto: true },
   { id: 'orcamento_festa', nome: 'Orçamento para festas', pronto: false },
 ]
 
@@ -32,6 +32,7 @@ export const ACOES: Record<string, string> = {
   whatsapp_verificacao: 'teve o WhatsApp avaliado', acesso_liberado: 'foi liberada', acesso_bloqueado: 'foi bloqueada',
   justificativa_enviada: 'recebeu uma justificativa', tarefa_desmarcada: 'desmarcou uma tarefa', tarefa_encerrada: 'encerrou tarefa',
   tarefa_feita: 'marcou tarefa como feita', recurso_alterado: 'teve um recurso alterado', limite_alterado: 'teve o limite de integrantes alterado', pagamento_registrado: 'teve pagamento registrado',
+  ingressos_configurados: 'configurou ingressos', ingresso_pedido: 'pediu ingresso', ingresso_confirmado: 'confirmou pagamento de ingresso', ingresso_cancelado: 'cancelou ingresso', ingresso_usado: 'deu baixa em ingresso', festa_cancelada: 'cancelou festa',
 }
 
 export const reais = (v: number | null | undefined) => (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })

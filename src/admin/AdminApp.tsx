@@ -10,7 +10,8 @@ import Regioes from './Regioes'
 import Planos from './Planos'
 import Automacoes from './Automacoes'
 import Precos from './Precos'
-import { Ingressos, Calendario } from './Fase3'
+import Ingressos from './IngressosAdm'
+import CalendarioGeral from './CalendarioGeral'
 
 export type Pagina = 'visao' | 'contatos' | 'regioes' | 'planos' | 'automacoes' | 'precos' | 'ingressos' | 'calendario'
 
@@ -25,8 +26,8 @@ const MENU: { id: Pagina; nome: string; fase3?: boolean }[] = [
   { id: 'planos', nome: 'Planos' },
   { id: 'automacoes', nome: 'Automações' },
   { id: 'precos', nome: 'Base de preços' },
-  { id: 'ingressos', nome: 'Ingressos', fase3: true },
-  { id: 'calendario', nome: 'Calendário geral', fase3: true },
+  { id: 'ingressos', nome: 'Ingressos' },
+  { id: 'calendario', nome: 'Calendário geral' },
 ]
 
 export default function AdminApp() {
@@ -98,7 +99,7 @@ export default function AdminApp() {
           {pagina === 'automacoes' && <Automacoes />}
           {pagina === 'precos' && <Precos />}
           {pagina === 'ingressos' && <Ingressos />}
-          {pagina === 'calendario' && <Calendario />}
+          {pagina === 'calendario' && <CalendarioGeral />}
         </main>
       </div>
       {senha && session?.user.email && <TrocarSenha email={session.user.email} avisar={avisar} onFechar={() => setSenha(false)} />}
