@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { Campo, Folha } from '../components'
 import { useAdm } from './AdminApp'
 import type { Interessada, Modelo, PlanoCfg, RepAdmin } from './tipos'
-import { NOME_PLANO, SITUACAO, dataBR, preencher, reais, waLink } from './util'
+import { NOME_PLANO, RECURSOS, SITUACAO, dataBR, preencher, reais, waLink } from './util'
 
 const FILTROS = [
   { id: '', nome: 'Todas' }, { id: 'em_dia', nome: 'Em dia' }, { id: 'vence_em_breve', nome: 'Vence em breve' },
@@ -86,7 +86,7 @@ export default function Contatos() {
 
   return (
     <>
-      <h1>Repúblicas e contatos</h1>
+      <h1>Repúblicas</h1>
       <div className="linha quebra">
         <input className="grow" style={{ minWidth: 200 }} placeholder="Buscar por república, líder ou cidade" value={busca} onChange={(e) => setBusca(e.target.value)} />
       </div>
@@ -196,6 +196,9 @@ function Detalhe({ r, planos, msg, rpc, onFechar }: {
         </select>
       </Campo>
 
+      <Limite r={r} rpc={rpc} />
+      <Recursos r={r} planos={planos} />
+
       <div className="grade2">
         <Campo rotulo="Vencimento"><input type="date" value={venc} onChange={(e) => setVenc(e.target.value)} /></Campo>
         <Campo rotulo="Valor combinado (R$)"><input inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="usa o do plano" /></Campo>
@@ -226,5 +229,72 @@ function Detalhe({ r, planos, msg, rpc, onFechar }: {
         {r.ativo ? 'Bloquear acesso' : 'Liberar acesso'}
       </button>
     </Folha>
+  )
+}
+
+function Limite({ r, rpc }: { r: RepAdmin; rpc: (fn: string, args: Record<string, unknown>, ok: string) => Promise<void> }) {
+  const [v, setV] = useState(String(r.limite_membros))
+  useEffect(() => setV(String(r.limite_membros)), [r.limite_membros])
+  return (
+    <div className="linha quebra">
+      <Campo rotulo={`Limite de integrantes (hoje ${r.integrantes})`}>
+        <input inputMode="numeric" style={{ width: 120 }} value={v} onChange={(e) => setV(e.target.value)} />
+      </Campo>
+      <button className="btn mini" style={{ alignSelf: 'flex-end' }} onClick={() => rpc('admin_set_limite', { p_rep: r.id, p_limite: Number(v) || 0 }, 'Limite atualizado.')}>Salvar limite</button>
+    </div>
+  )
+}
+
+interface Forca { recurso: string; ativo: boolean; ate: string | null }
+
+function Recursos({ r, planos }: { r: RepAdmin; planos: PlanoCfg[] }) {
+  const { avisar } = useAdm()
+  const [valendo, setValendo] = useState<string[]>([])
+  const [forcas, setForcas] = useState<Forca[]>([])
+  const [datas, setDatas] = useState<Record<string, string>>({})
+  const noPlano = planos.find((p) => p.id === r.plano)?.recursos || []
+
+  const carregar = useCallback(async () => {
+    const [a, b] = await Promise.all([
+      supabase.rpc('recursos_da_republica', { p_rep: r.id }),
+      supabase.from('republica_recursos').select('recurso,ativo,ate').eq('republica_id', r.id),
+    ])
+    setValendo((a.data || []) as string[]); setForcas((b.data || []) as Forca[])
+  }, [r.id, r.plano]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { carregar() }, [carregar])
+
+  async function definir(rec: string, ativo: boolean | null) {
+    const { error } = await supabase.rpc('admin_set_recurso', { p_rep: r.id, p_recurso: rec, p_ativo: ativo, p_ate: ativo === null ? null : datas[rec] || null })
+    if (error) return avisar(error.message, true)
+    avisar(ativo === null ? 'Voltou ao padrão do plano.' : ativo ? 'Recurso ligado.' : 'Recurso desligado.')
+    carregar()
+  }
+
+  return (
+    <div className="pilha" style={{ gap: 8 }}>
+      <b>Recursos desta república</b>
+      <span className="small muted">Valem na hora no app dela. “Até” é opcional: passada a data, o recurso volta ao padrão do plano sozinho.</span>
+      {RECURSOS.map((x) => {
+        const on = valendo.includes(x.id)
+        const f = forcas.find((y) => y.recurso === x.id)
+        const vigente = f && (!f.ate || f.ate >= new Date().toISOString().slice(0, 10))
+        const origem = vigente ? (f!.ativo ? 'ligado por você' : 'desligado por você') + (f!.ate ? ' até ' + dataBR(f!.ate) : '') : noPlano.includes(x.id) ? 'do plano' : 'fora do plano'
+        return (
+          <div className="card" key={x.id} style={{ padding: 10, gap: 6 }}>
+            <div className="linha entre">
+              <span>{x.nome} {!x.pronto && <span className="chip">em breve</span>}</span>
+              <span className={'chip ' + (on ? 'ok' : '')}>{on ? 'Ligado' : 'Desligado'} · {origem}</span>
+            </div>
+            <div className="linha quebra">
+              <input type="date" aria-label={'Até quando — ' + x.nome} style={{ width: 150, minHeight: 36 }} value={datas[x.id] ?? f?.ate ?? ''} onChange={(e) => setDatas({ ...datas, [x.id]: e.target.value })} />
+              {!on && <button className="btn mini primario" onClick={() => definir(x.id, true)}>Ligar</button>}
+              {on && <button className="btn mini perigo" onClick={() => definir(x.id, false)}>Desligar</button>}
+              {f && <button className="btn mini" onClick={() => definir(x.id, null)}>Voltar ao padrão do plano</button>}
+            </div>
+          </div>
+        )
+      })}
+      {valendo.includes('multas') && !valendo.includes('escala') && <span className="chip aviso" style={{ whiteSpace: 'normal' }}>Multas dependem da escala: com a escala desligada, não haverá faltas nem multas.</span>}
+    </div>
   )
 }

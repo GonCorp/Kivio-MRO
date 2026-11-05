@@ -15,13 +15,15 @@ export default function Inicio({ ir }: { ir: (a: Aba) => void }) {
   const [multas, setMultas] = useState<Multa[]>([])
   const [avisos, setAvisos] = useState<{ id: string; texto: string; link: string | null }[]>([])
   const h = hoje()
+  const temEscala = app.tem('escala')
+  const temMultas = app.tem('escala') && app.tem('multas')
 
   useEffect(() => {
     ;(async () => {
       const [o, a, m, t, av] = await Promise.all([
-        supabase.rpc('ocorrencias', { p_rep: rep.id, p_de: h, p_ate: h }),
-        supabase.rpc('ocorrencias', { p_rep: rep.id, p_de: somarDias(h, -30), p_ate: h }),
-        supabase.rpc('multas_do_mes', { p_rep: rep.id, p_mes: primeiroDoMes(h) }),
+        temEscala ? supabase.rpc('ocorrencias', { p_rep: rep.id, p_de: h, p_ate: h }) : { data: [] },
+        temEscala ? supabase.rpc('ocorrencias', { p_rep: rep.id, p_de: somarDias(h, -30), p_ate: h }) : { data: [] },
+        temMultas ? supabase.rpc('multas_do_mes', { p_rep: rep.id, p_mes: primeiroDoMes(h) }) : { data: [] },
         supabase.from('tarefas').select('id,titulo').eq('republica_id', rep.id),
         supabase.from('avisos').select('id,texto,link').order('created_at', { ascending: false }).limit(3),
       ])
@@ -31,7 +33,7 @@ export default function Inicio({ ir }: { ir: (a: Aba) => void }) {
       setMultas((m.data || []) as Multa[])
       setTitulos(Object.fromEntries(((t.data || []) as Pick<Tarefa, 'id' | 'titulo'>[]).map((x) => [x.id, x.titulo])))
     })()
-  }, [rep.id, h])
+  }, [rep.id, h, temEscala, temMultas]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const minhasHoje = oc.filter((o) => o.membro_id === app.membro?.id)
   const minhasMultas = multas.filter((m) => m.membro_id === app.membro?.id).reduce((s, m) => s + Number(m.valor), 0)
@@ -66,8 +68,8 @@ export default function Inicio({ ir }: { ir: (a: Aba) => void }) {
         </button>
       )}
 
-      <h2>Suas tarefas de hoje</h2>
-      {minhasHoje.length === 0 ? (
+      {temEscala && <h2>Suas tarefas de hoje</h2>}
+      {!temEscala ? null : minhasHoje.length === 0 ? (
         <div className="card vazio">Nada para você hoje.</div>
       ) : (
         minhasHoje.map((o) => (
@@ -81,11 +83,11 @@ export default function Inicio({ ir }: { ir: (a: Aba) => void }) {
       )}
 
       <div className="grade2">
-        <button className="card" style={{ textAlign: 'left' }} onClick={() => ir('multas')}>
+        {temMultas && <button className="card" style={{ textAlign: 'left' }} onClick={() => ir('multas')}>
           <span className="muted small">Suas multas no mês</span>
           <span className={'num' + (minhasMultas > 0 ? ' ruim' : '')}>{reais(minhasMultas)}</span>
-        </button>
-        {app.podeGerir ? (
+        </button>}
+        {app.podeGerir && temMultas ? (
           <button className="card" style={{ textAlign: 'left' }} onClick={() => ir('multas')}>
             <span className="muted small">Multas da casa</span>
             <span className={'num' + (totalCasa > 0 ? ' ruim' : '')}>{reais(totalCasa)}</span>

@@ -10,13 +10,15 @@ export const SITUACAO: Record<Situacao, { nome: string; chip: string }> = {
 
 export const NOME_PLANO: Record<string, string> = { gratis: 'Grátis', basico: 'Básico', completo: 'Completo' }
 
-export const RECURSOS: { id: string; nome: string }[] = [
-  { id: 'escala', nome: 'Escala de tarefas' },
-  { id: 'multas', nome: 'Missões e multas' },
-  { id: 'financas', nome: 'Finanças da casa' },
-  { id: 'relatorios', nome: 'Relatórios' },
-  { id: 'calendario', nome: 'Calendário geral de festas' },
-  { id: 'ingressos', nome: 'Ingressos e portaria' },
+// "pronto" = já existe no app. Os outros podem ser marcados, mas só passam a funcionar quando forem construídos.
+export const RECURSOS: { id: string; nome: string; pronto: boolean }[] = [
+  { id: 'escala', nome: 'Escala de tarefas', pronto: true },
+  { id: 'multas', nome: 'Missões e multas (depende da escala)', pronto: true },
+  { id: 'financas', nome: 'Finanças da casa', pronto: false },
+  { id: 'relatorios', nome: 'Relatórios', pronto: false },
+  { id: 'calendario', nome: 'Calendário geral de festas', pronto: false },
+  { id: 'ingressos', nome: 'Ingressos e portaria', pronto: false },
+  { id: 'orcamento_festa', nome: 'Orçamento para festas', pronto: false },
 ]
 
 export const ACOES: Record<string, string> = {
@@ -25,7 +27,7 @@ export const ACOES: Record<string, string> = {
   multas_configuradas: 'configurou as multas', plano_alterado: 'teve o plano alterado', tarefa_criada: 'criou tarefa',
   whatsapp_verificacao: 'teve o WhatsApp avaliado', acesso_liberado: 'foi liberada', acesso_bloqueado: 'foi bloqueada',
   justificativa_enviada: 'recebeu uma justificativa', tarefa_desmarcada: 'desmarcou uma tarefa', tarefa_encerrada: 'encerrou tarefa',
-  tarefa_feita: 'marcou tarefa como feita', pagamento_registrado: 'teve pagamento registrado',
+  tarefa_feita: 'marcou tarefa como feita', recurso_alterado: 'teve um recurso alterado', limite_alterado: 'teve o limite de integrantes alterado', pagamento_registrado: 'teve pagamento registrado',
 }
 
 export const reais = (v: number | null | undefined) => (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })

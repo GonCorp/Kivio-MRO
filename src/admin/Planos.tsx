@@ -22,11 +22,12 @@ export default function Planos() {
   function mudar(id: string, campos: Partial<PlanoCfg>) { setPlanos((p) => p.map((x) => (x.id === id ? { ...x, ...campos } : x))) }
 
   async function salvar(p: PlanoCfg) {
-    const { error } = await supabase.from('planos').update({
-      nome: p.nome, preco_mensal: p.preco_mensal, limite_membros: p.limite_membros, descricao: p.descricao, recursos: p.recursos,
-    }).eq('id', p.id)
+    const { data, error } = await supabase.rpc('admin_salvar_plano', {
+      p_id: p.id, p_nome: p.nome, p_preco: p.preco_mensal, p_limite: p.limite_membros, p_desc: p.descricao, p_recursos: p.recursos,
+    })
     if (error) return avisar(error.message, true)
-    avisar('Plano salvo.')
+    avisar(`Plano salvo. Já vale para as ${contagem(p.id)} república(s) deste plano` + (Number(data) ? ` (limite atualizado em ${data}).` : '.'))
+    carregar()
   }
 
   const contagem = (id: string) => reps.filter((r) => r.plano === id && r.ativo).length
@@ -39,7 +40,7 @@ export default function Planos() {
   return (
     <>
       <h1>Planos</h1>
-      <p className="muted small">O preço e o limite valem para quem trocar de plano daqui para frente. Quem já tem valor combinado mantém o combinado (campo na república).</p>
+      <p className="muted small">Tudo que você marca aqui vale na hora para as repúblicas do plano: o que estiver desmarcado some do app delas e o banco recusa a ação. Quem tem valor combinado mantém o combinado. Para liberar ou tirar um recurso de uma única república (por exemplo, só por um mês), use a aba Repúblicas.</p>
       <div className="grade-cards">
         {planos.map((p) => (
           <div className="card" key={p.id}>
@@ -59,7 +60,7 @@ export default function Planos() {
               <label key={r.id} className="linha">
                 <input type="checkbox" checked={p.recursos.includes(r.id)}
                   onChange={(e) => mudar(p.id, { recursos: e.target.checked ? [...p.recursos, r.id] : p.recursos.filter((x) => x !== r.id) })} />
-                {r.nome}
+                {r.nome}{!r.pronto && <span className="chip" title="Ainda não existe no app">em breve</span>}
               </label>
             ))}
             <button className="btn primario" onClick={() => salvar(p)}>Salvar plano</button>

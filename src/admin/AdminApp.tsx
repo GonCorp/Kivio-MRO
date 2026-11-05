@@ -19,7 +19,7 @@ export const useAdm = () => useContext(C)
 
 const MENU: { id: Pagina; nome: string; fase3?: boolean }[] = [
   { id: 'visao', nome: 'Visão do app' },
-  { id: 'contatos', nome: 'Repúblicas e contatos' },
+  { id: 'contatos', nome: 'Repúblicas' },
   { id: 'regioes', nome: 'Regiões e avisos' },
   { id: 'planos', nome: 'Planos' },
   { id: 'automacoes', nome: 'Automações' },

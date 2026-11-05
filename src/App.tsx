@@ -20,6 +20,7 @@ interface Dados {
   republica: Republica | null
   membros: Membro[]
   nomes: Record<string, string>
+  recursos: string[]
 }
 
 export default function App() {
@@ -53,22 +54,32 @@ export default function App() {
     let republica: Republica | null = null
     let membros: Membro[] = []
     let nomes: Record<string, string> = {}
+    let recursos: string[] = []
     if (meu) {
       const { data: r } = await supabase.from('republicas').select('*').eq('id', meu.republica_id).single()
       republica = (r as Republica) || null
       if (republica?.ativo) {
-        const [ms, ps] = await Promise.all([
+        const [ms, ps, rc] = await Promise.all([
           supabase.from('membros').select('*').eq('republica_id', meu.republica_id).eq('ativo', true),
           supabase.from('profiles').select('id,nome'),
+          supabase.rpc('recursos_da_republica', { p_rep: meu.republica_id }),
         ])
+        recursos = (rc.data || []) as string[]
         membros = (ms.data || []) as Membro[]
         nomes = Object.fromEntries(((ps.data || []) as { id: string; nome: string }[]).map((x) => [x.id, x.nome]))
       }
     }
-    setDados({ perfil: p as Perfil, membro: (meu as Membro) || null, republica, membros, nomes })
+    setDados({ perfil: p as Perfil, membro: (meu as Membro) || null, republica, membros, nomes, recursos })
   }, [uid])
 
   useEffect(() => { recarregar() }, [recarregar])
+
+  // Quando o administrador muda o plano ou liga/desliga um recurso, o app reflete ao voltar para ele
+  useEffect(() => {
+    const f = () => { if (document.visibilityState === 'visible') recarregar() }
+    document.addEventListener('visibilitychange', f)
+    return () => document.removeEventListener('visibilitychange', f)
+  }, [recarregar])
 
   useEffect(() => {
     if ('serviceWorker' in navigator && import.meta.env.PROD) navigator.serviceWorker.register('/sw.js').catch(() => {})
@@ -85,6 +96,7 @@ export default function App() {
     const ehLider = dados.membro?.papel === 'lider'
     return {
       userId: uid, ...dados,
+      tem: (r: string) => dados.recursos.includes(r),
       ehLider,
       podeGerir: ehLider || Boolean(dados.membro?.funcoes.includes('multas')),
       recarregar, avisar, sair,
@@ -113,10 +125,12 @@ export default function App() {
   else {
     const abas: { id: Aba; nome: string; icone: JSX.Element }[] = [
       { id: 'inicio', nome: 'Início', icone: Icone.inicio },
-      { id: 'escala', nome: 'Escala', icone: Icone.escala },
-      { id: 'multas', nome: 'Multas', icone: Icone.multas },
+      ...(ctx.tem('escala') ? [{ id: 'escala' as Aba, nome: 'Escala', icone: Icone.escala }] : []),
+      ...(ctx.tem('multas') && ctx.tem('escala') ? [{ id: 'multas' as Aba, nome: 'Multas', icone: Icone.multas }] : []),
       { id: 'casa', nome: 'Casa', icone: Icone.casa },
     ]
+    // se o recurso da aba atual foi desligado, volta para o Início
+    const atual: Aba = abas.some((a) => a.id === aba) ? aba : 'inicio'
     corpo = (
       <>
         <div className="app">
@@ -128,15 +142,15 @@ export default function App() {
             </div>
             <button className="btn mini" onClick={sair}>Sair</button>
           </header>
-          {aba === 'inicio' && <Inicio ir={setAba} />}
-          {aba === 'escala' && <Escala />}
-          {aba === 'multas' && <Multas />}
-          {aba === 'casa' && <Casa />}
+          {atual === 'inicio' && <Inicio ir={setAba} />}
+          {atual === 'escala' && <Escala />}
+          {atual === 'multas' && <Multas />}
+          {atual === 'casa' && <Casa />}
         </div>
         <div className="abas">
           <nav aria-label="Menu">
             {abas.map((a) => (
-              <button key={a.id} aria-current={aba === a.id ? 'page' : undefined} onClick={() => setAba(a.id)}>
+              <button key={a.id} aria-current={atual === a.id ? 'page' : undefined} onClick={() => setAba(a.id)}>
                 {a.icone}
                 {a.nome}
               </button>
