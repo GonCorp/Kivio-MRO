@@ -11,8 +11,9 @@ import Inicio from './screens/Inicio'
 import Escala from './screens/Escala'
 import Multas from './screens/Multas'
 import Casa from './screens/Casa'
+import Financas from './screens/Financas'
 
-type Aba = 'inicio' | 'escala' | 'multas' | 'casa'
+type Aba = 'inicio' | 'escala' | 'multas' | 'financas' | 'casa'
 
 interface Dados {
   perfil: Perfil
@@ -97,6 +98,7 @@ export default function App() {
     return {
       userId: uid, email: session?.user.email || '', ...dados,
       tem: (r: string) => dados.recursos.includes(r),
+      funcao: (f: string) => ehLider || Boolean(dados.membro?.funcoes.includes(f as never)),
       ehLider,
       podeGerir: ehLider || Boolean(dados.membro?.funcoes.includes('multas')),
       recarregar, avisar, sair,
@@ -127,6 +129,7 @@ export default function App() {
       { id: 'inicio', nome: 'Início', icone: Icone.inicio },
       ...(ctx.tem('escala') ? [{ id: 'escala' as Aba, nome: 'Escala', icone: Icone.escala }] : []),
       ...(ctx.tem('multas') && ctx.tem('escala') ? [{ id: 'multas' as Aba, nome: 'Multas', icone: Icone.multas }] : []),
+      ...(ctx.tem('financas') ? [{ id: 'financas' as Aba, nome: 'Finanças', icone: Icone.financas }] : []),
       { id: 'casa', nome: 'Casa', icone: Icone.casa },
     ]
     // se o recurso da aba atual foi desligado, volta para o Início
@@ -145,6 +148,7 @@ export default function App() {
           {atual === 'inicio' && <Inicio ir={setAba} />}
           {atual === 'escala' && <Escala />}
           {atual === 'multas' && <Multas />}
+          {atual === 'financas' && <Financas />}
           {atual === 'casa' && <Casa />}
         </div>
         <div className="abas">

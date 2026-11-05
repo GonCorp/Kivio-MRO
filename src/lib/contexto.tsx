@@ -11,6 +11,7 @@ export interface Contexto {
   nomes: Record<string, string> // user_id -> nome
   podeGerir: boolean // líder ou função "multas"
   ehLider: boolean
+  funcao: (f: string) => boolean // líder ou quem recebeu a função
   recursos: string[] // o que o plano (ou você, via painel) liberou para esta república
   tem: (recurso: string) => boolean
   recarregar: () => Promise<void>

@@ -77,3 +77,13 @@ export interface Cidade {
   nome: string
   ativa: boolean
 }
+
+export interface Conta { id: string; republica_id: string; nome: string; tipo: 'casa' | 'festa' | 'caixinha' | 'outro'; saldo_inicial: number }
+export interface SaldoConta { conta_id: string; nome: string; tipo: Conta['tipo']; saldo_inicial: number; entradas: number; saidas: number; saldo: number; movimentos: number }
+export interface Lancamento {
+  id: string; conta_id: string; tipo: 'receita' | 'despesa'; valor: number; descricao: string
+  categoria: string | null; data: string; origem: 'manual' | 'cobranca' | 'ingresso'
+}
+export interface Cobranca { id: string; titulo: string; valor: number; vencimento: string | null; conta_id: string | null; created_at: string }
+export interface CobrancaItem { id: string; cobranca_id: string; membro_id: string; valor: number; pago: boolean; pago_em: string | null }
+export interface MinhaCobranca { item_id: string; titulo: string; valor: number; vencimento: string | null; pago: boolean; pago_em: string | null }

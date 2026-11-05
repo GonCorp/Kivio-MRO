@@ -4,7 +4,7 @@ import { nomeDoMembro, useApp } from '../lib/contexto'
 import type { Multa, Ocorrencia, Tarefa } from '../lib/tipos'
 import { dataCurta, hoje, primeiroDoMes, reais, somarDias } from '../lib/datas'
 
-type Aba = 'inicio' | 'escala' | 'multas' | 'casa'
+type Aba = 'inicio' | 'escala' | 'multas' | 'financas' | 'casa'
 
 export default function Inicio({ ir }: { ir: (a: Aba) => void }) {
   const app = useApp()
@@ -13,6 +13,7 @@ export default function Inicio({ ir }: { ir: (a: Aba) => void }) {
   const [analise, setAnalise] = useState<Ocorrencia[]>([])
   const [titulos, setTitulos] = useState<Record<string, string>>({})
   const [multas, setMultas] = useState<Multa[]>([])
+  const [devo, setDevo] = useState<{ n: number; total: number }>({ n: 0, total: 0 })
   const [avisos, setAvisos] = useState<{ id: string; texto: string; link: string | null }[]>([])
   const h = hoje()
   const temEscala = app.tem('escala')
@@ -20,13 +21,16 @@ export default function Inicio({ ir }: { ir: (a: Aba) => void }) {
 
   useEffect(() => {
     ;(async () => {
-      const [o, a, m, t, av] = await Promise.all([
+      const [o, a, m, t, av, cb] = await Promise.all([
         temEscala ? supabase.rpc('ocorrencias', { p_rep: rep.id, p_de: h, p_ate: h }) : { data: [] },
         temEscala ? supabase.rpc('ocorrencias', { p_rep: rep.id, p_de: somarDias(h, -30), p_ate: h }) : { data: [] },
         temMultas ? supabase.rpc('multas_do_mes', { p_rep: rep.id, p_mes: primeiroDoMes(h) }) : { data: [] },
         supabase.from('tarefas').select('id,titulo').eq('republica_id', rep.id),
         supabase.from('avisos').select('id,texto,link').order('created_at', { ascending: false }).limit(3),
+        app.tem('financas') ? supabase.rpc('minhas_cobrancas', { p_rep: rep.id }) : { data: [] },
       ])
+      const abertas = ((cb.data || []) as { pago: boolean; valor: number }[]).filter((x) => !x.pago)
+      setDevo({ n: abertas.length, total: abertas.reduce((s, x) => s + Number(x.valor), 0) })
       setAvisos((av.data || []) as { id: string; texto: string; link: string | null }[])
       setOc((o.data || []) as Ocorrencia[])
       setAnalise(((a.data || []) as Ocorrencia[]).filter((x) => x.status === 'em_analise'))
@@ -65,6 +69,13 @@ export default function Inicio({ ir }: { ir: (a: Aba) => void }) {
           {paraAnalisar.slice(0, 3).map((o) => (
             <span className="small muted" key={o.tarefa_id + o.data}>{nomeDoMembro(app, o.membro_id)} · {titulos[o.tarefa_id] || 'Tarefa'} · {dataCurta(o.data)}</span>
           ))}
+        </button>
+      )}
+
+      {devo.n > 0 && (
+        <button className="card" style={{ textAlign: 'left', borderColor: 'var(--aviso-fg)' }} onClick={() => ir('financas')}>
+          <b>Você tem {devo.n} cobrança(s) em aberto</b>
+          <span className="small muted">Total: {reais(devo.total)}</span>
         </button>
       )}
 

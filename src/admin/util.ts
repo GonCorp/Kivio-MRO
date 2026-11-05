@@ -17,9 +17,9 @@ export const NOME_PLANO: Record<string, string> = { gratis: 'Grátis', basico: '
 export const RECURSOS: { id: string; nome: string; pronto: boolean }[] = [
   { id: 'escala', nome: 'Escala de tarefas', pronto: true },
   { id: 'multas', nome: 'Missões e multas (depende da escala)', pronto: true },
-  { id: 'financas', nome: 'Finanças da casa', pronto: false },
+  { id: 'financas', nome: 'Finanças da casa', pronto: true },
   { id: 'relatorios', nome: 'Relatórios', pronto: false },
-  { id: 'calendario', nome: 'Calendário geral de festas', pronto: false },
+  { id: 'calendario', nome: 'Calendário de festas (marcar festa)', pronto: false },
   { id: 'ingressos', nome: 'Ingressos e portaria', pronto: false },
   { id: 'orcamento_festa', nome: 'Orçamento para festas', pronto: false },
 ]
