@@ -5,7 +5,7 @@ import { FUNCOES, type Funcao, type Membro } from '../lib/tipos'
 import { Folha } from '../components'
 
 // Número oficial do WhatsApp Business da Kivio Digital (público): 55 + DDD + número
-const OFICIAL = (import.meta.env.VITE_WHATSAPP_OFICIAL as string | undefined) || '5531996825457'
+const OFICIAL = (import.meta.env.VITE_WHATSAPP_OFICIAL as string | undefined) || '5531990003109'
 
 export default function Casa() {
   const app = useApp()

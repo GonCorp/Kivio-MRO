@@ -44,9 +44,10 @@ export default function Auth() {
     <main className="centro">
       <img className="logo" src="/kivio-logo-fundo-claro.svg" alt="Kivio Digital" />
       <div className="pilha" style={{ width: '100%' }}>
-        <div>
-          <h1>MRO</h1>
-          <p className="muted">Minha República em Ordem: escala, missões e multas num só lugar.</p>
+        <div style={{ textAlign: 'center' }}>
+          <h1 style={{ fontSize: 40, letterSpacing: '0.04em' }}>MRO</h1>
+          <p style={{ fontWeight: 700 }}>Minha República em Ordem</p>
+          <p className="muted" style={{ marginTop: 6 }}>Escala de tarefas, multas combinadas e a rotina da casa num só lugar. Menos discussão, mais organização.</p>
         </div>
         <div className="seg" role="group" aria-label="Entrar ou criar conta">
           <button type="button" aria-pressed={modo === 'entrar'} onClick={() => setModo('entrar')}>Entrar</button>
