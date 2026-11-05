@@ -73,20 +73,6 @@ export interface Faixa {
   valor: number
 }
 
-export interface RepAdmin {
-  id: string
-  nome: string
-  cidade: string
-  ativo: boolean
-  plano: 'gratis' | 'basico' | 'completo'
-  integrantes: number
-  lider_nome: string | null
-  whatsapp_lider: string | null
-  whatsapp_status: 'nao_verificado' | 'verificado'
-  codigo_verificacao: string
-  created_at: string
-}
-
 export interface Cidade {
   nome: string
   ativa: boolean

@@ -107,3 +107,4 @@ input[type='checkbox'], input[type='radio'] { width: 20px; height: 20px; min-hei
 .dias-sel input { display: none; }
 .dias-sel span { display: block; padding: 10px 0; border-radius: 10px; border: 1px solid var(--linha); font-weight: 700; font-size: 13px; cursor: pointer; }
 .dias-sel input:checked + span { background: var(--acento); color: var(--sobre-acento); border-color: var(--acento); }
+a.btn { text-decoration: none; color: inherit; }

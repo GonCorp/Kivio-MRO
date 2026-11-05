@@ -4,7 +4,7 @@ import { nomeDoMembro, useApp } from '../lib/contexto'
 import type { Multa, Ocorrencia, Tarefa } from '../lib/tipos'
 import { dataCurta, hoje, primeiroDoMes, reais, somarDias } from '../lib/datas'
 
-type Aba = 'inicio' | 'escala' | 'multas' | 'casa' | 'admin'
+type Aba = 'inicio' | 'escala' | 'multas' | 'casa'
 
 export default function Inicio({ ir }: { ir: (a: Aba) => void }) {
   const app = useApp()
@@ -13,16 +13,19 @@ export default function Inicio({ ir }: { ir: (a: Aba) => void }) {
   const [analise, setAnalise] = useState<Ocorrencia[]>([])
   const [titulos, setTitulos] = useState<Record<string, string>>({})
   const [multas, setMultas] = useState<Multa[]>([])
+  const [avisos, setAvisos] = useState<{ id: string; texto: string; link: string | null }[]>([])
   const h = hoje()
 
   useEffect(() => {
     ;(async () => {
-      const [o, a, m, t] = await Promise.all([
+      const [o, a, m, t, av] = await Promise.all([
         supabase.rpc('ocorrencias', { p_rep: rep.id, p_de: h, p_ate: h }),
         supabase.rpc('ocorrencias', { p_rep: rep.id, p_de: somarDias(h, -30), p_ate: h }),
         supabase.rpc('multas_do_mes', { p_rep: rep.id, p_mes: primeiroDoMes(h) }),
         supabase.from('tarefas').select('id,titulo').eq('republica_id', rep.id),
+        supabase.from('avisos').select('id,texto,link').order('created_at', { ascending: false }).limit(3),
       ])
+      setAvisos((av.data || []) as { id: string; texto: string; link: string | null }[])
       setOc((o.data || []) as Ocorrencia[])
       setAnalise(((a.data || []) as Ocorrencia[]).filter((x) => x.status === 'em_analise'))
       setMultas((m.data || []) as Multa[])
@@ -38,6 +41,14 @@ export default function Inicio({ ir }: { ir: (a: Aba) => void }) {
   return (
     <>
       <h1>Olá, {app.perfil.nome.split(' ')[0]}!</h1>
+
+      {avisos.map((a) => (
+        <div className="card" key={a.id} style={{ borderColor: 'var(--aviso-fg)' }}>
+          <b>Aviso da Kivio</b>
+          <span className="small">{a.texto}</span>
+          {a.link && <a className="small" href={a.link} target="_blank" rel="noreferrer">Saiba mais</a>}
+        </div>
+      ))}
 
       {app.ehLider && rep.whatsapp_status !== 'verificado' && (
         <button className="card" style={{ textAlign: 'left', borderColor: 'var(--aviso-fg)' }} onClick={() => ir('casa')}>

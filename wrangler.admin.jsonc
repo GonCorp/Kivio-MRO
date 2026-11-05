@@ -1,0 +1,10 @@
+{
+  // Site EXCLUSIVO do super admin (Ryan). É um segundo Worker, com endereço próprio,
+  // separado do site dos clientes (wrangler.jsonc).
+  "name": "kivio-admin",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./dist-admin",
+    "not_found_handling": "single-page-application"
+  }
+}

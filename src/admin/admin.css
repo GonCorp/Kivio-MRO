@@ -1,0 +1,30 @@
+/* Visual do painel do super admin: usa as mesmas cores do MRO, com layout mais largo */
+.adm { min-height: 100dvh; display: flex; flex-direction: column; }
+.adm-topo { position: sticky; top: 0; z-index: 30; background: var(--azul); color: #fff; }
+.adm-topo .in { max-width: 1100px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 12px; }
+.adm-topo b { font-weight: 800; }
+.adm-topo .sub { opacity: .75; font-size: 12px; }
+.adm-topo .btn { background: transparent; color: #fff; border-color: rgba(255,255,255,.4); }
+.adm-nav { background: var(--card); border-bottom: 1px solid var(--linha); position: sticky; top: 57px; z-index: 29; }
+.adm-nav .in { max-width: 1100px; margin: 0 auto; padding: 0 8px; display: flex; overflow-x: auto; scrollbar-width: none; }
+.adm-nav button { border: 0; background: transparent; padding: 14px 12px; font-weight: 700; font-size: 14px; color: var(--suave-txt); white-space: nowrap; border-bottom: 3px solid transparent; }
+.adm-nav button[aria-current='page'] { color: var(--acento); border-bottom-color: var(--laranja); }
+.adm-nav .fase3 { opacity: .6; }
+.adm-main { width: 100%; max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; display: flex; flex-direction: column; gap: 18px; }
+.grade-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.grade-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; align-items: start; }
+.kpi { text-align: left; }
+.kpi .num { line-height: 1.1; }
+button.kpi { cursor: pointer; }
+.alerta { border-left: 4px solid var(--aviso-fg); }
+.alerta.ruim { border-left-color: var(--ruim-fg); }
+.tabela { width: 100%; border-collapse: collapse; font-size: 14px; }
+.tabela th, .tabela td { padding: 8px 10px; border-bottom: 1px solid var(--linha); text-align: left; }
+.tabela th { font-size: 12px; color: var(--suave-txt); font-weight: 700; position: sticky; top: 0; background: var(--card); }
+.rolagem { overflow: auto; max-height: 70dvh; border: 1px solid var(--linha); border-radius: 14px; background: var(--card); }
+.tabela input { min-height: 34px; padding: 0 8px; width: 96px; border-radius: 8px; }
+.tabela td.menor { color: var(--ok-fg); font-weight: 800; }
+.fase3-box { text-align: center; padding: 40px 16px; }
+.pre { white-space: pre-wrap; background: var(--suave); border-radius: 12px; padding: 12px; font-size: 14px; }
+.toast { bottom: 24px; }
+@media (max-width: 520px) { .grade-cards { grid-template-columns: 1fr; } }

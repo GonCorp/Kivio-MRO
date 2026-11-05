@@ -11,9 +11,8 @@ import Inicio from './screens/Inicio'
 import Escala from './screens/Escala'
 import Multas from './screens/Multas'
 import Casa from './screens/Casa'
-import Admin from './screens/Admin'
 
-type Aba = 'inicio' | 'escala' | 'multas' | 'casa' | 'admin'
+type Aba = 'inicio' | 'escala' | 'multas' | 'casa'
 
 interface Dados {
   perfil: Perfil
@@ -108,21 +107,16 @@ export default function App() {
 
   const saida = toast && <div className={'toast' + (toast.erro ? ' erro' : '')} role="status">{toast.t}</div>
 
-  // super admin sem república: só o painel
-  const soAdmin = ctx.perfil.is_super_admin && !ctx.membro
-
   let corpo
-  if (!ctx.membro && !soAdmin) corpo = <Onboarding />
-  else if (ctx.republica && !ctx.republica.ativo && !ctx.perfil.is_super_admin) corpo = <Bloqueado />
+  if (!ctx.membro) corpo = ctx.perfil.is_super_admin ? <SoAdmin sair={sair} /> : <Onboarding />
+  else if (ctx.republica && !ctx.republica.ativo) corpo = <Bloqueado />
   else {
-    const abas: { id: Aba; nome: string; icone: JSX.Element }[] = soAdmin ? [] : [
+    const abas: { id: Aba; nome: string; icone: JSX.Element }[] = [
       { id: 'inicio', nome: 'Início', icone: Icone.inicio },
       { id: 'escala', nome: 'Escala', icone: Icone.escala },
       { id: 'multas', nome: 'Multas', icone: Icone.multas },
       { id: 'casa', nome: 'Casa', icone: Icone.casa },
     ]
-    if (ctx.perfil.is_super_admin) abas.push({ id: 'admin', nome: 'Admin', icone: Icone.admin })
-    const atual: Aba = soAdmin ? 'admin' : aba
     corpo = (
       <>
         <div className="app">
@@ -134,21 +128,19 @@ export default function App() {
             </div>
             <button className="btn mini" onClick={sair}>Sair</button>
           </header>
-          {atual === 'inicio' && <Inicio ir={setAba} />}
-          {atual === 'escala' && <Escala />}
-          {atual === 'multas' && <Multas />}
-          {atual === 'casa' && <Casa />}
-          {atual === 'admin' && <Admin />}
+          {aba === 'inicio' && <Inicio ir={setAba} />}
+          {aba === 'escala' && <Escala />}
+          {aba === 'multas' && <Multas />}
+          {aba === 'casa' && <Casa />}
         </div>
         <div className="abas">
           <nav aria-label="Menu">
             {abas.map((a) => (
-              <button key={a.id} aria-current={atual === a.id ? 'page' : undefined} onClick={() => setAba(a.id)}>
+              <button key={a.id} aria-current={aba === a.id ? 'page' : undefined} onClick={() => setAba(a.id)}>
                 {a.icone}
                 {a.nome}
               </button>
             ))}
-            {soAdmin && <button aria-current="page">{Icone.admin}Admin</button>}
           </nav>
         </div>
       </>
@@ -160,5 +152,19 @@ export default function App() {
       {corpo}
       {saida}
     </Ctx.Provider>
+  )
+}
+
+// Conta do administrador que não pertence a nenhuma república: o painel fica em outro endereço.
+function SoAdmin({ sair }: { sair: () => void }) {
+  return (
+    <main className="centro">
+      <div className="card">
+        <h2>Esta é a conta de administrador</h2>
+        <p>O painel do administrador fica em um endereço separado, exclusivo. Aqui é o app das repúblicas.</p>
+        <p className="muted small">Para testar o app como cliente, saia e entre com outra conta (ou crie uma república de teste).</p>
+        <button className="btn primario" onClick={sair}>Sair</button>
+      </div>
+    </main>
   )
 }
