@@ -97,7 +97,7 @@ input[type='checkbox'], input[type='radio'] { width: 20px; height: 20px; min-hei
 
 .centro { min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px 16px; gap: 20px; max-width: 440px; margin: 0 auto; }
 .centro picture { display: flex; justify-content: center; width: 100%; }
-.centro img.logo { width: 220px; max-width: 70%; height: auto; display: block; }
+.centro img.logo { width: 180px; max-width: 60%; height: auto; display: block; }
 .codigo { font-family: ui-monospace, Menlo, monospace; font-size: 28px; font-weight: 800; letter-spacing: 0.18em; text-align: center; padding: 12px; border-radius: 12px; background: var(--suave); }
 .seg { display: flex; background: var(--suave); border-radius: 12px; padding: 4px; gap: 4px; }
 .seg button { flex: 1; min-height: 38px; border: 0; border-radius: 9px; background: transparent; font-weight: 700; color: var(--suave-txt); }
