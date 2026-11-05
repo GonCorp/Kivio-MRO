@@ -42,7 +42,10 @@ export default function Auth() {
 
   return (
     <main className="centro">
-      <img className="logo" src="/kivio-logo-fundo-claro.svg" alt="Kivio Digital" />
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcSet="/kivio-logo-app-escuro.svg" />
+        <img className="logo" src="/kivio-logo-app-claro.svg" alt="Kivio Digital" />
+      </picture>
       <div className="pilha" style={{ width: '100%' }}>
         <div style={{ textAlign: 'center' }}>
           <h1 style={{ fontSize: 40, letterSpacing: '0.04em' }}>MRO</h1>

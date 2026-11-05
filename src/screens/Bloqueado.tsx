@@ -4,7 +4,10 @@ export default function Bloqueado() {
   const app = useApp()
   return (
     <main className="centro">
-      <img className="logo" src="/kivio-logo-fundo-claro.svg" alt="Kivio Digital" />
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcSet="/kivio-logo-app-escuro.svg" />
+        <img className="logo" src="/kivio-logo-app-claro.svg" alt="Kivio Digital" />
+      </picture>
       <div className="card" style={{ width: '100%' }}>
         <h2>Acesso suspenso</h2>
         <p>
