@@ -1,12 +1,15 @@
 import type { Situacao } from './tipos'
 
 export const SITUACAO: Record<Situacao, { nome: string; chip: string }> = {
+  demo: { nome: 'Demonstração', chip: '' },
   gratis: { nome: 'Grátis', chip: '' },
   sem_vencimento: { nome: 'Sem vencimento', chip: 'aviso' },
   atrasada: { nome: 'Atrasada', chip: 'ruim' },
   vence_em_breve: { nome: 'Vence em breve', chip: 'aviso' },
   em_dia: { nome: 'Em dia', chip: 'ok' },
 }
+
+export const APP_URL = 'https://kivio-mro.goncorp-grupo.workers.dev'
 
 export const NOME_PLANO: Record<string, string> = { gratis: 'Grátis', basico: 'Básico', completo: 'Completo' }
 

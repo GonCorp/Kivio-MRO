@@ -76,8 +76,6 @@ export default function Visao() {
           <div className="card kpi"><span className="muted small">Assinando</span><span className="num">{r.assinando}</span><span className="small muted">{r.gratis} no plano grátis</span></div>
           <div className="card kpi"><span className="muted small">Receita prevista/mês</span><span className="num">{reais(r.receita_prevista)}</span><span className="small muted">repúblicas ativas e pagas</span></div>
           <div className="card kpi"><span className="muted small">Integrantes</span><span className="num">{r.integrantes}</span><span className="small muted">usando o app</span></div>
-          <div className="card kpi"><span className="muted small">Tarefas ativas</span><span className="num">{r.tarefas_ativas}</span><span className="small muted">em todas as casas</span></div>
-          <div className="card kpi"><span className="muted small">Faltas no mês</span><span className={'num' + (r.faltas_mes > 0 ? ' ruim' : '')}>{r.faltas_mes}</span><span className="small muted">{r.justificativas} justificativa(s) em análise</span></div>
         </div>
       )}
 

@@ -1,5 +1,5 @@
 export type Plano = 'gratis' | 'basico' | 'completo'
-export type Situacao = 'gratis' | 'sem_vencimento' | 'atrasada' | 'vence_em_breve' | 'em_dia'
+export type Situacao = 'demo' | 'gratis' | 'sem_vencimento' | 'atrasada' | 'vence_em_breve' | 'em_dia'
 
 export interface RepAdmin {
   id: string
@@ -19,6 +19,7 @@ export interface RepAdmin {
   nota_admin: string | null
   contatado: boolean
   limite_membros: number
+  demo: boolean
 }
 
 export interface Resumo {

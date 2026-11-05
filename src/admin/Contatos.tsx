@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { Campo, Folha } from '../components'
+import NovaRepublica from './NovaRepublica'
 import { useAdm } from './AdminApp'
 import type { Interessada, Modelo, PlanoCfg, RepAdmin } from './tipos'
 import { NOME_PLANO, RECURSOS, SITUACAO, dataBR, preencher, reais, waLink } from './util'
@@ -8,7 +9,7 @@ import { NOME_PLANO, RECURSOS, SITUACAO, dataBR, preencher, reais, waLink } from
 const FILTROS = [
   { id: '', nome: 'Todas' }, { id: 'em_dia', nome: 'Em dia' }, { id: 'vence_em_breve', nome: 'Vence em breve' },
   { id: 'atrasada', nome: 'Atrasadas' }, { id: 'sem_vencimento', nome: 'Sem vencimento' }, { id: 'gratis', nome: 'Grátis' },
-  { id: 'whatsapp', nome: 'WhatsApp pendente' }, { id: 'bloqueada', nome: 'Bloqueadas' }, { id: 'interessadas', nome: 'Interessadas' },
+  { id: 'whatsapp', nome: 'WhatsApp pendente' }, { id: 'bloqueada', nome: 'Bloqueadas' }, { id: 'demo', nome: 'Demonstração' }, { id: 'interessadas', nome: 'Interessadas' },
 ]
 
 export function vars(r: RepAdmin, planos: PlanoCfg[]): Record<string, string> {
@@ -28,6 +29,7 @@ export default function Contatos() {
   const [busca, setBusca] = useState('')
   const [fil, setFil] = useState(filtro)
   const [edit, setEdit] = useState<RepAdmin | null>(null)
+  const [nova, setNova] = useState(false)
   const [novaInt, setNovaInt] = useState<Partial<Interessada> | null>(null)
 
   const carregar = useCallback(async () => {
@@ -86,12 +88,13 @@ export default function Contatos() {
 
   return (
     <>
-      <h1>Repúblicas</h1>
+      <div className="linha entre quebra"><h1>Repúblicas</h1><button className="btn primario" onClick={() => setNova(true)}>Nova república</button></div>
+      {nova && <NovaRepublica planos={planos} onFechar={() => setNova(false)} onCriada={carregar} />}
       <div className="linha quebra">
         <input className="grow" style={{ minWidth: 200 }} placeholder="Buscar por república, líder ou cidade" value={busca} onChange={(e) => setBusca(e.target.value)} />
-      </div>
-      <div className="linha quebra">
-        {FILTROS.map((f) => <button key={f.id} className={'btn mini' + (fil === f.id ? ' primario' : '')} onClick={() => setFil(f.id)}>{f.nome}</button>)}
+        <select aria-label="Filtrar" style={{ width: 'auto', minWidth: 190 }} value={fil} onChange={(e) => setFil(e.target.value)}>
+          {FILTROS.map((f) => <option key={f.id} value={f.id}>{f.nome}</option>)}
+        </select>
       </div>
 
       {fil !== 'interessadas' && (
