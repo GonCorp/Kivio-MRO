@@ -1,0 +1,10 @@
+{
+  // Publicação na Cloudflare (Workers com arquivos estáticos): é o caminho que a própria Cloudflare
+  // recomenda hoje para projetos novos, no lugar do Pages. Continua grátis.
+  "name": "kivio-mro",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}
