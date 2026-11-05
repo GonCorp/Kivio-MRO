@@ -3,6 +3,7 @@ import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { Campo } from '../components'
 import { traduz } from '../screens/Auth'
+import TrocarSenha from '../TrocarSenha'
 import Visao from './Visao'
 import Contatos from './Contatos'
 import Regioes from './Regioes'
@@ -35,6 +36,7 @@ export default function AdminApp() {
   const [pagina, setPagina] = useState<Pagina>('visao')
   const [filtro, setFiltro] = useState('')
   const [toast, setToast] = useState<{ t: string; erro: boolean } | null>(null)
+  const [senha, setSenha] = useState(false)
   const [aviso, setAviso] = useState<string | null>(null)
   const timer = useRef<number>()
 
@@ -75,7 +77,9 @@ export default function AdminApp() {
       <div className="adm">
         <header className="adm-topo">
           <div className="in">
+            <img src="/kivio-simbolo-branco.svg" alt="" width="36" height="36" style={{ flex: 'none' }} />
             <div className="grow"><b>Kivio Digital · Painel</b><div className="sub">Área exclusiva do administrador</div></div>
+            <button className="btn mini" onClick={() => setSenha(true)}>Trocar senha</button>
             <button className="btn mini" onClick={() => supabase.auth.signOut()}>Sair</button>
           </div>
         </header>
@@ -97,6 +101,7 @@ export default function AdminApp() {
           {pagina === 'calendario' && <Calendario />}
         </main>
       </div>
+      {senha && session?.user.email && <TrocarSenha email={session.user.email} avisar={avisar} onFechar={() => setSenha(false)} />}
       {toast && <div className={'toast' + (toast.erro ? ' erro' : '')} role="status">{toast.t}</div>}
     </C.Provider>
   )

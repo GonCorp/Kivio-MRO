@@ -3,6 +3,7 @@ import type { Membro, Perfil, Republica } from './tipos'
 
 export interface Contexto {
   userId: string
+  email: string
   perfil: Perfil
   membro: Membro | null
   republica: Republica | null

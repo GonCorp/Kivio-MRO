@@ -95,13 +95,13 @@ export default function App() {
     if (!dados || !uid) return null
     const ehLider = dados.membro?.papel === 'lider'
     return {
-      userId: uid, ...dados,
+      userId: uid, email: session?.user.email || '', ...dados,
       tem: (r: string) => dados.recursos.includes(r),
       ehLider,
       podeGerir: ehLider || Boolean(dados.membro?.funcoes.includes('multas')),
       recarregar, avisar, sair,
     }
-  }, [dados, uid, recarregar, avisar, sair])
+  }, [dados, uid, session, recarregar, avisar, sair])
 
   if (!configurado) {
     return (

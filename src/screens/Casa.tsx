@@ -3,12 +3,14 @@ import { supabase } from '../lib/supabase'
 import { useApp } from '../lib/contexto'
 import { FUNCOES, type Funcao, type Membro } from '../lib/tipos'
 import { Folha } from '../components'
+import TrocarSenha from '../TrocarSenha'
 
 // Número oficial do WhatsApp Business da Kivio Digital (público): 55 + DDD + número
 const OFICIAL = (import.meta.env.VITE_WHATSAPP_OFICIAL as string | undefined) || '5531990003109'
 
 export default function Casa() {
   const app = useApp()
+  const [senha, setSenha] = useState(false)
   const rep = app.republica!
   const ativos = app.membros.filter((m) => m.ativo)
   const [sel, setSel] = useState<Membro | null>(null)
@@ -95,6 +97,8 @@ export default function Casa() {
         </button>
       ))}
 
+      <button className="btn" onClick={() => setSenha(true)}>Trocar minha senha</button>
+      {senha && <TrocarSenha email={app.email} avisar={app.avisar} onFechar={() => setSenha(false)} />}
       {!app.ehLider && <button className="btn perigo" onClick={sair}>Sair da república</button>}
 
       {sel && <Opcoes membro={sel} onFechar={() => setSel(null)} />}
