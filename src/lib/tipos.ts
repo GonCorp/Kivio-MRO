@@ -26,6 +26,7 @@ export interface Republica {
   whatsapp_status: 'nao_verificado' | 'verificado'
   codigo_verificacao: string
   teto_multa: number | null
+  espacamento_dias: number
 }
 
 export interface Membro {
@@ -87,3 +88,5 @@ export interface Lancamento {
 export interface Cobranca { id: string; titulo: string; valor: number; vencimento: string | null; conta_id: string | null; created_at: string }
 export interface CobrancaItem { id: string; cobranca_id: string; membro_id: string; valor: number; pago: boolean; pago_em: string | null }
 export interface MinhaCobranca { item_id: string; titulo: string; valor: number; vencimento: string | null; pago: boolean; pago_em: string | null }
+
+export interface FestaCal { id: string; republica_id: string; republica: string; data: string; titulo: string; local: string | null; minha: boolean; espacamento_dias: number }

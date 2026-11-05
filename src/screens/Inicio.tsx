@@ -4,7 +4,7 @@ import { nomeDoMembro, useApp } from '../lib/contexto'
 import type { Multa, Ocorrencia, Tarefa } from '../lib/tipos'
 import { dataCurta, hoje, primeiroDoMes, reais, somarDias } from '../lib/datas'
 
-type Aba = 'inicio' | 'escala' | 'multas' | 'financas' | 'casa'
+type Aba = 'inicio' | 'escala' | 'multas' | 'financas' | 'festas' | 'casa'
 
 export default function Inicio({ ir }: { ir: (a: Aba) => void }) {
   const app = useApp()

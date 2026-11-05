@@ -57,3 +57,9 @@ export function nomeMes(d: string): string {
 }
 
 export const reais = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+
+export function diffDias(a: string, b: string): number {
+  return Math.round((parse(a).getTime() - parse(b).getTime()) / 86400000)
+}
+export const diasNoMes = (d: string) => new Date(Date.UTC(Number(d.slice(0, 4)), Number(d.slice(5, 7)), 0)).getUTCDate()
+export const nomeDiaExtenso = (d: string) => DIAS[diaSemana(d)] + ', ' + dataCurta(d)

@@ -12,8 +12,9 @@ import Escala from './screens/Escala'
 import Multas from './screens/Multas'
 import Casa from './screens/Casa'
 import Financas from './screens/Financas'
+import Festas from './screens/Festas'
 
-type Aba = 'inicio' | 'escala' | 'multas' | 'financas' | 'casa'
+type Aba = 'inicio' | 'escala' | 'multas' | 'financas' | 'festas' | 'casa'
 
 interface Dados {
   perfil: Perfil
@@ -130,6 +131,7 @@ export default function App() {
       ...(ctx.tem('escala') ? [{ id: 'escala' as Aba, nome: 'Escala', icone: Icone.escala }] : []),
       ...(ctx.tem('multas') && ctx.tem('escala') ? [{ id: 'multas' as Aba, nome: 'Multas', icone: Icone.multas }] : []),
       ...(ctx.tem('financas') ? [{ id: 'financas' as Aba, nome: 'Finanças', icone: Icone.financas }] : []),
+      ...(ctx.tem('calendario') || ctx.tem('calendario_ver') ? [{ id: 'festas' as Aba, nome: 'Festas', icone: Icone.festas }] : []),
       { id: 'casa', nome: 'Casa', icone: Icone.casa },
     ]
     // se o recurso da aba atual foi desligado, volta para o Início
@@ -149,6 +151,7 @@ export default function App() {
           {atual === 'escala' && <Escala />}
           {atual === 'multas' && <Multas />}
           {atual === 'financas' && <Financas />}
+          {atual === 'festas' && <Festas />}
           {atual === 'casa' && <Casa />}
         </div>
         <div className="abas">
