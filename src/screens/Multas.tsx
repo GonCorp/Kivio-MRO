@@ -110,7 +110,7 @@ export default function Multas() {
   )
 }
 
-function EditarRegras({ faixas, teto, onFechar, onSalvo }: { faixas: Faixa[]; teto: number | null; onFechar: () => void; onSalvo: () => void }) {
+export function EditarRegras({ faixas, teto, onFechar, onSalvo }: { faixas: Faixa[]; teto: number | null; onFechar: () => void; onSalvo: () => void }) {
   const app = useApp()
   const [valores, setValores] = useState<string[]>(faixas.length ? faixas.map((f) => String(f.valor)) : ['10'])
   const [tetoTxt, setTetoTxt] = useState(teto ? String(teto) : '')

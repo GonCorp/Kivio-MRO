@@ -9,9 +9,10 @@ import Auth from './screens/Auth'
 import Onboarding from './screens/Onboarding'
 import Bloqueado from './screens/Bloqueado'
 import Inicio from './screens/Inicio'
-import Escala from './screens/Escala'
-import Multas from './screens/Multas'
-import Casa from './screens/Casa'
+import MinhasMissoes from './screens/Escala'
+import EscalaQuadro from './screens/EscalaQuadro'
+import Missoes from './screens/Missoes'
+import Integrantes from './screens/Integrantes'
 import Financas from './screens/Financas'
 import { Calendario } from './screens/Festas'
 import Ingressos, { Portaria } from './screens/Ingressos'
@@ -173,9 +174,10 @@ export default function App() {
           {atual === 'painel' && <Painel ir={ir} />}
           {atual === 'pint' && <Inicio ir={(a) => ir(mapaAntigo[a] || 'pint')} />}
           {atual === 'relat' && <Relatorios />}
-          {(atual === 'escala' || atual === 'minhas') && <Escala />}
-          {atual === 'mis' && <Multas />}
-          {atual === 'membros' && <Casa />}
+          {atual === 'escala' && <EscalaQuadro />}
+          {atual === 'minhas' && <MinhasMissoes />}
+          {atual === 'mis' && <Missoes />}
+          {atual === 'membros' && <Integrantes />}
           {(atual === 'fin' || atual === 'cobr') && <Financas intencao={intencao} />}
           {atual === 'cal' && <Calendario />}
           {(atual === 'tickets' || atual === 'ingr') && <Ingressos />}

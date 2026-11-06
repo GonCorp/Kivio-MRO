@@ -13,7 +13,7 @@ export const ROTULO: Record<StatusOc, { t: string; c: string }> = {
   falta: { t: 'Falta', c: 'ruim' },
 }
 
-export default function Escala() {
+export default function MinhasMissoes() {
   const app = useApp()
   const rep = app.republica!
   const [semana, setSemana] = useState(segundaDaSemana(hoje()))
@@ -185,7 +185,7 @@ function Justificar({ oc, titulo, onFechar, onEnviada }: { oc: Ocorrencia; titul
   )
 }
 
-function NovaTarefa({ onFechar, onCriada }: { onFechar: () => void; onCriada: () => void }) {
+export function NovaTarefa({ onFechar, onCriada }: { onFechar: () => void; onCriada: () => void }) {
   const app = useApp()
   const rep = app.republica!
   const [membroId, setMembroId] = useState(app.membros.find((m) => m.ativo)?.id || '')
