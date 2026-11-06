@@ -45,7 +45,7 @@ export default function Casa() {
 
   return (
     <>
-      <h1>Casa</h1>
+      <span />
 
       <div className="card">
         <div className="linha entre">

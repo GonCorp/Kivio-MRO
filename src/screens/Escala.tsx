@@ -61,7 +61,7 @@ export default function Escala() {
   return (
     <>
       <div className="linha entre">
-        <h1>Escala</h1>
+        <span />
         {app.podeGerir && <button className="btn primario" onClick={() => setNova(true)}>+ Nova tarefa</button>}
       </div>
 

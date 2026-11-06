@@ -9,14 +9,14 @@ import { Campo, Folha } from '../components'
 type Sub = 'contas' | 'lanc' | 'cobr' | 'minhas'
 const TIPOS = { casa: 'Casa', festa: 'Festa', caixinha: 'Caixinha', outro: 'Outro' } as const
 
-export default function Financas() {
+export default function Financas({ intencao = '' }: { intencao?: string }) {
   const app = useApp()
   const gerente = app.funcao('financeiro')
-  const [sub, setSub] = useState<Sub>(gerente ? 'contas' : 'minhas')
+  const [sub, setSub] = useState<Sub>(gerente ? (intencao === 'cobranca' ? 'cobr' : intencao === 'despesa' || intencao === 'receita' ? 'lanc' : 'contas') : 'minhas')
 
   return (
     <>
-      <h1>Finanças</h1>
+      <span hidden />
       {gerente && (
         <div className="seg" role="group" aria-label="Seções">
           {([['contas', 'Contas'], ['lanc', 'Lançamentos'], ['cobr', 'Cobranças'], ['minhas', 'Minhas']] as [Sub, string][]).map(([id, nome]) => (

@@ -3,7 +3,8 @@ import type { Session } from '@supabase/supabase-js'
 import { configurado, supabase } from './lib/supabase'
 import { Ctx, type Contexto } from './lib/contexto'
 import type { Membro, Perfil, Republica } from './lib/tipos'
-import { Icone } from './components'
+import { Ico } from './components'
+import { montarNav, primeiraVista, TITULOS, type Vista } from './nav'
 import Auth from './screens/Auth'
 import Onboarding from './screens/Onboarding'
 import Bloqueado from './screens/Bloqueado'
@@ -12,9 +13,11 @@ import Escala from './screens/Escala'
 import Multas from './screens/Multas'
 import Casa from './screens/Casa'
 import Financas from './screens/Financas'
-import Festas from './screens/Festas'
-
-type Aba = 'inicio' | 'escala' | 'multas' | 'financas' | 'festas' | 'casa'
+import { Calendario } from './screens/Festas'
+import Ingressos, { Portaria } from './screens/Ingressos'
+import Relatorios from './screens/Relatorios'
+import Painel from './screens/Painel'
+import EmConstrucao from './screens/EmConstrucao'
 
 interface Dados {
   perfil: Perfil
@@ -29,7 +32,10 @@ export default function App() {
   const [session, setSession] = useState<Session | null>(null)
   const [pronto, setPronto] = useState(false)
   const [dados, setDados] = useState<Dados | null>(null)
-  const [aba, setAba] = useState<Aba>('inicio')
+  const [vista, setVista] = useState<Vista>('')
+  const [intencao, setIntencao] = useState('')
+  const [menuAberto, setMenuAberto] = useState(false)
+  const [fechados, setFechados] = useState<Record<string, boolean>>({})
   const [toast, setToast] = useState<{ t: string; erro: boolean } | null>(null)
   const timer = useRef<number>()
 
@@ -90,7 +96,7 @@ export default function App() {
   const sair = useCallback(async () => {
     await supabase.auth.signOut()
     setDados(null)
-    setAba('inicio')
+    setVista('')
   }, [])
 
   const ctx: Contexto | null = useMemo(() => {
@@ -126,45 +132,57 @@ export default function App() {
   if (!ctx.membro) corpo = ctx.perfil.is_super_admin ? <SoAdmin sair={sair} /> : <Onboarding />
   else if (ctx.republica && !ctx.republica.ativo) corpo = <Bloqueado />
   else {
-    const abas: { id: Aba; nome: string; icone: JSX.Element }[] = [
-      { id: 'inicio', nome: 'Início', icone: Icone.inicio },
-      ...(ctx.tem('escala') ? [{ id: 'escala' as Aba, nome: 'Escala', icone: Icone.escala }] : []),
-      ...(ctx.tem('multas') && ctx.tem('escala') ? [{ id: 'multas' as Aba, nome: 'Multas', icone: Icone.multas }] : []),
-      ...(ctx.tem('financas') ? [{ id: 'financas' as Aba, nome: 'Finanças', icone: Icone.financas }] : []),
-      ...(ctx.tem('calendario') || ctx.tem('calendario_ver') ? [{ id: 'festas' as Aba, nome: 'Festas', icone: Icone.festas }] : []),
-      { id: 'casa', nome: 'Casa', icone: Icone.casa },
-    ]
-    // se o recurso da aba atual foi desligado, volta para o Início
-    const atual: Aba = abas.some((a) => a.id === aba) ? aba : 'inicio'
+    const grupos = montarNav(ctx)
+    const todas = grupos.flatMap((g) => g.itens.map((i) => i.id))
+    const primeira = primeiraVista(ctx)
+    const atual: Vista = todas.includes(vista) ? vista : todas.includes(primeira) ? primeira : todas[0]
+    const ir = (v: Vista, i = '') => { setVista(v); setIntencao(i); setMenuAberto(false); window.scrollTo(0, 0) }
+    const [titulo, sub] = TITULOS[atual] || ['', '']
+    const mapaAntigo: Record<string, Vista> = { inicio: 'pint', escala: 'minhas', multas: 'mis', financas: 'cobr', casa: 'membros', festas: 'cal' }
     corpo = (
-      <>
-        <div className="app">
-          <header className="topo">
+      <div className="shell">
+        <aside className={'lado' + (menuAberto ? ' aberto' : '')}>
+          <div className="rep">
             <div className="marca">{(ctx.republica?.nome || 'K').charAt(0).toUpperCase()}</div>
-            <div className="tit">
-              <b>{ctx.republica?.nome || 'Kivio Digital'}</b>
-              <span className="muted small">no MRO</span>
-            </div>
-            <button className="btn mini" onClick={sair}>Sair</button>
-          </header>
-          {atual === 'inicio' && <Inicio ir={setAba} />}
-          {atual === 'escala' && <Escala />}
-          {atual === 'multas' && <Multas />}
-          {atual === 'financas' && <Financas />}
-          {atual === 'festas' && <Festas />}
-          {atual === 'casa' && <Casa />}
-        </div>
-        <div className="abas">
+            <div style={{ minWidth: 0 }}><b>{ctx.republica?.nome || 'Kivio Digital'}</b><span className="muted small">no MRO</span></div>
+          </div>
           <nav aria-label="Menu">
-            {abas.map((a) => (
-              <button key={a.id} aria-current={atual === a.id ? 'page' : undefined} onClick={() => setAba(a.id)}>
-                {a.icone}
-                {a.nome}
-              </button>
+            {grupos.map((g) => (
+              <div key={g.nome} style={{ display: 'contents' }}>
+                <button className="grupo" aria-label={(fechados[g.nome] ? 'Abrir ' : 'Recolher ') + g.nome} onClick={() => setFechados({ ...fechados, [g.nome]: !fechados[g.nome] })}>
+                  {g.nome}<span style={{ width: 16, height: 16, display: 'inline-flex' }}><Ico nome={fechados[g.nome] ? 'right' : 'down'} /></span>
+                </button>
+                {!fechados[g.nome] && g.itens.map((i) => (
+                  <button key={i.id} className="item" aria-current={atual === i.id ? 'page' : undefined} onClick={() => ir(i.id)}>
+                    <Ico nome={i.icone} />{i.nome}{i.aviso && <span className="chip" style={{ marginLeft: 'auto' }}>{i.aviso}</span>}
+                  </button>
+                ))}
+              </div>
             ))}
           </nav>
-        </div>
-      </>
+          <div className="rodape"><button className="btn" onClick={sair}>Sair</button></div>
+        </aside>
+        <main className="principal">
+          <header className="cab">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <button className="btn mini menu-btn" aria-label="Abrir menu" onClick={() => setMenuAberto(!menuAberto)}><span style={{ width: 20, height: 20, display: 'inline-flex' }}><Ico nome="menu" /></span></button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><h1>{titulo}</h1><span className="muted small">{sub}</span></div>
+            </div>
+            <span className="pilula">{ctx.republica?.nome} · {ctx.republica?.cidade}</span>
+          </header>
+          {atual === 'painel' && <Painel ir={ir} />}
+          {atual === 'pint' && <Inicio ir={(a) => ir(mapaAntigo[a] || 'pint')} />}
+          {atual === 'relat' && <Relatorios />}
+          {(atual === 'escala' || atual === 'minhas') && <Escala />}
+          {atual === 'mis' && <Multas />}
+          {atual === 'membros' && <Casa />}
+          {(atual === 'fin' || atual === 'cobr') && <Financas intencao={intencao} />}
+          {atual === 'cal' && <Calendario />}
+          {(atual === 'tickets' || atual === 'ingr') && <Ingressos />}
+          {atual === 'portaria' && <Portaria />}
+          {atual === 'festa' && <EmConstrucao />}
+        </main>
+      </div>
     )
   }
 

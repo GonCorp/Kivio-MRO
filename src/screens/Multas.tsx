@@ -43,7 +43,7 @@ export default function Multas() {
   return (
     <>
       <div className="linha entre">
-        <h1>Multas</h1>
+        <span />
         {app.podeGerir && <button className="btn" onClick={() => setEditando(true)}>Regras</button>}
       </div>
 

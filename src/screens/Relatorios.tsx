@@ -50,7 +50,7 @@ function frase(a: Atv): string {
   }
 }
 
-export default function Relatorios({ onFechar }: { onFechar: () => void }) {
+export default function Relatorios({ onFechar }: { onFechar?: () => void }) {
   const app = useApp()
   const rep = app.republica!
   const [aba, setAba] = useState<'resumo' | 'atividade'>('resumo')
@@ -76,7 +76,7 @@ export default function Relatorios({ onFechar }: { onFechar: () => void }) {
   const quando = (t: string) => new Date(t).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })
 
   return (
-    <Folha titulo="Relatórios" onFechar={onFechar}>
+    <Envol onFechar={onFechar}>
       <div className="seg" role="group" aria-label="Tipo de relatório">
         <button aria-pressed={aba === 'resumo'} onClick={() => setAba('resumo')}>Resumo do mês</button>
         <button aria-pressed={aba === 'atividade'} onClick={() => setAba('atividade')}>Atividades</button>
@@ -141,6 +141,11 @@ export default function Relatorios({ onFechar }: { onFechar: () => void }) {
           ))}
         </>
       )}
-    </Folha>
+    </Envol>
   )
+}
+
+function Envol({ onFechar, children }: { onFechar?: () => void; children: React.ReactNode }) {
+  if (onFechar) return <Folha titulo="Relatórios" onFechar={onFechar}>{children}</Folha>
+  return <div className="pilha" style={{ maxWidth: 760 }}>{children}</div>
 }
