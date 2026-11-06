@@ -60,7 +60,6 @@ export default function Integrantes() {
   }
 
   const dadosAcesso = (c: { email: string; senha: string }) => `Acesso ao MRO da ${rep.nome}\nEndereço: ${location.origin}\nE-mail: ${c.email}\nSenha: ${c.senha}`
-  const convite = `Entra na nossa república no MRO! Crie sua conta em ${location.origin} e use o código ${rep.codigo_convite}.`
 
   return (
     <div className="pilha" style={{ maxWidth: 820 }}>
@@ -137,16 +136,6 @@ export default function Integrantes() {
         </>
       )}
 
-      <details className="card">
-        <summary style={{ cursor: 'pointer', fontWeight: 700 }}>Convidar por código (alternativa)</summary>
-        <span className="small muted">O integrante cria a própria conta e digita este código ao entrar.</span>
-        <div className="codigo">{rep.codigo_convite}</div>
-        <div className="linha quebra">
-          <a className="btn primario" href={'https://wa.me/?text=' + encodeURIComponent(convite)} target="_blank" rel="noreferrer">Enviar pelo WhatsApp</a>
-          <button className="btn" onClick={() => copiar(convite)}>Copiar</button>
-          <button className="btn" onClick={() => confirm('Gerar um novo código? O código antigo deixa de funcionar.') && rpc('regenerar_convite', { p_rep: rep.id }, 'Novo código gerado.')}>Novo código</button>
-        </div>
-      </details>
     </div>
   )
 }

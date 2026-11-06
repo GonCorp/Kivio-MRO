@@ -147,6 +147,6 @@ a.btn { text-decoration: none; color: inherit; }
   .shell { flex-direction: row; align-items: stretch; }
   .lado { display: flex; width: 264px; flex: none; position: sticky; top: 0; height: 100dvh; overflow-y: auto; }
   .cab .menu-btn { display: none; }
-  .principal { padding: 28px; max-width: 1180px; }
+  .principal { padding: 28px 32px; }
 }
 .toast { bottom: 24px; }
