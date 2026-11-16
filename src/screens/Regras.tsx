@@ -58,6 +58,11 @@ export default function Regras() {
     if (error) return app.avisar(error.message, true)
     app.avisar('Regras salvas.'); await app.recarregar()
   }
+  async function comparacao(nomes: boolean) {
+    const { error } = await supabase.rpc('salvar_comparacao', { p_rep: rep.id, p_nomes: nomes })
+    if (error) return app.avisar(error.message, true)
+    await app.recarregar()
+  }
   async function motivo(m: Motivo | null, texto: string, acao: Motivo['acao']) {
     const { error } = await supabase.rpc('salvar_motivo', { p_rep: rep.id, p_motivo: texto, p_acao: acao, p_id: m?.id ?? null })
     if (error) return app.avisar(error.message, true)
@@ -113,6 +118,15 @@ export default function Regras() {
           <div className="card" style={{ background: 'var(--suave)' }}><span className="small">{Number(dias) > 0 ? `Pedimos que ninguém marque festa até ${dias} dia(s) antes ou depois da nossa.` : 'Sem pedido de espaçamento.'}</span></div>
           <span className="small muted">É um pedido, não um bloqueio. Outras repúblicas ainda podem marcar mais perto se quiserem.</span>
           <button className="btn primario" onClick={salvarGerais}>Salvar foto e espaçamento</button>
+        </div>
+      </div>
+
+      <div className="bloco" style={{ flex: '1 1 100%' }}>
+        <h2>Comparação entre integrantes</h2>
+        <span className="small muted">No painel de cada integrante há um quadro que compara as missões dele com a média da casa e com os colegas. Escolha se os colegas aparecem com nome ou só como “Colega 1, 2, 3”.</span>
+        <div className="linha quebra">
+          <button className={'btn mini' + (!rep.comparar_nomes ? ' primario' : '')} onClick={() => comparacao(false)}>Sem nomes (recomendado)</button>
+          <button className={'btn mini' + (rep.comparar_nomes ? ' primario' : '')} onClick={() => comparacao(true)}>Com nomes</button>
         </div>
       </div>
 

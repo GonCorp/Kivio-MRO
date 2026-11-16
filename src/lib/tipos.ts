@@ -29,6 +29,7 @@ export interface Republica {
   espacamento_dias: number
   foto_missao: 'desligada' | 'opcional' | 'obrigatoria'
   cor: string | null
+  comparar_nomes: boolean
 }
 
 export interface Membro {

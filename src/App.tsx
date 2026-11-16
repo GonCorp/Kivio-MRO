@@ -8,7 +8,6 @@ import { montarNav, primeiraVista, TITULOS, type Vista } from './nav'
 import Auth from './screens/Auth'
 import Onboarding from './screens/Onboarding'
 import Bloqueado from './screens/Bloqueado'
-import Inicio from './screens/Inicio'
 import MinhasMissoes from './screens/Escala'
 import EscalaQuadro from './screens/EscalaQuadro'
 import Missoes from './screens/Missoes'
@@ -18,6 +17,7 @@ import { Calendario } from './screens/Festas'
 import Ingressos, { Portaria } from './screens/Ingressos'
 import Relatorios from './screens/Relatorios'
 import Painel from './screens/Painel'
+import PainelIntegrante from './screens/PainelIntegrante'
 import EmConstrucao from './screens/EmConstrucao'
 import Regras, { RegrasLeitura } from './screens/Regras'
 import Personalizar from './screens/Personalizar'
@@ -144,7 +144,6 @@ export default function App() {
     const atual: Vista = todas.includes(vista) ? vista : todas.includes(primeira) ? primeira : todas[0]
     const ir = (v: Vista, i = '') => { setVista(v); setIntencao(i); setMenuAberto(false); window.scrollTo(0, 0) }
     const [titulo, sub] = TITULOS[atual] || ['', '']
-    const mapaAntigo: Record<string, Vista> = { inicio: 'pint', escala: 'minhas', multas: 'mis', financas: 'cobr', casa: 'membros', festas: 'cal' }
     corpo = (
       <div className="shell">
         <aside className={'lado' + (menuAberto ? ' aberto' : '')}>
@@ -176,8 +175,8 @@ export default function App() {
             </div>
             <span className="pilula">{ctx.republica?.nome} · {ctx.republica?.cidade}</span>
           </header>
-          {atual === 'painel' && <Painel ir={ir} />}
-          {atual === 'pint' && <Inicio ir={(a) => ir(mapaAntigo[a] || 'pint')} />}
+          {atual === 'painel' && (ctx.membro?.papel === 'lider' ? <Painel ir={ir} /> : <PainelIntegrante ir={ir} />)}
+          {atual === 'pint' && <PainelIntegrante ir={ir} />}
           {atual === 'relat' && <Relatorios />}
           {atual === 'escala' && <EscalaQuadro />}
           {atual === 'minhas' && <MinhasMissoes />}
