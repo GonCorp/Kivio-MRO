@@ -1,283 +1,400 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { nomeDoMembro, useApp } from '../lib/contexto'
-import type { Cobranca, CobrancaItem, Conta, Lancamento, MinhaCobranca, SaldoConta } from '../lib/tipos'
+import type { Categoria, Cobranca, CobrancaItem, Lancamento, MinhaCobranca, SaldoConta } from '../lib/tipos'
 import { dataCurta, hoje, reais } from '../lib/datas'
 import { lerValor } from '../lib/dinheiro'
 import { Campo, Folha } from '../components'
 
-type Sub = 'contas' | 'lanc' | 'cobr' | 'minhas'
 const TIPOS = { casa: 'Casa', festa: 'Festa', caixinha: 'Caixinha', outro: 'Outro' } as const
+const ICONES = ['🏠', '💡', '💧', '🌐', '🛒', '🍕', '🧹', '🎉', '🔧', '🚗', '📦', '🎁']
+const CORES = [['Azul', '#3b82f6'], ['Verde', '#22c55e'], ['Laranja', '#f59e0b'], ['Vermelho', '#ef4444'], ['Roxo', '#8b5cf6'], ['Rosa', '#ec4899'], ['Turquesa', '#14b8a6'], ['Cinza', '#6b7280']]
+type Modal = null | 'despesa' | 'receita' | 'cobranca' | 'categoria' | 'conta'
 
 export default function Financas({ intencao = '' }: { intencao?: string }) {
   const app = useApp()
-  const gerente = app.funcao('financeiro')
-  const [sub, setSub] = useState<Sub>(gerente ? (intencao === 'cobranca' ? 'cobr' : intencao === 'despesa' || intencao === 'receita' ? 'lanc' : 'contas') : 'minhas')
-
-  return (
-    <>
-      <span hidden />
-      {gerente && (
-        <div className="seg" role="group" aria-label="Seções">
-          {([['contas', 'Contas'], ['lanc', 'Lançamentos'], ['cobr', 'Cobranças'], ['minhas', 'Minhas']] as [Sub, string][]).map(([id, nome]) => (
-            <button key={id} aria-pressed={sub === id} onClick={() => setSub(id)}>{nome}</button>
-          ))}
-        </div>
-      )}
-      {sub === 'contas' && gerente && <Contas />}
-      {sub === 'lanc' && gerente && <Lancamentos />}
-      {sub === 'cobr' && gerente && <Cobrancas />}
-      {sub === 'minhas' && <Minhas />}
-    </>
-  )
+  if (!app.funcao('financeiro')) return <Minhas />
+  return <Gestao intencao={intencao} />
 }
 
-/* ------------------------------------------------------------ Contas */
-function Contas() {
+function Gestao({ intencao }: { intencao: string }) {
   const app = useApp()
   const rep = app.republica!
+  const ativos = useMemo(() => app.membros.filter((m) => m.ativo), [app.membros])
   const [saldos, setSaldos] = useState<SaldoConta[]>([])
-  const [nova, setNova] = useState(false)
-  const [f, setF] = useState({ nome: '', tipo: 'casa', saldo: '' })
-
-  const carregar = useCallback(async () => {
-    const { data } = await supabase.rpc('saldos_contas', { p_rep: rep.id })
-    setSaldos(((data || []) as SaldoConta[]).map((s) => ({ ...s, saldo: Number(s.saldo), entradas: Number(s.entradas), saidas: Number(s.saidas), movimentos: Number(s.movimentos) })))
-  }, [rep.id])
-  useEffect(() => { carregar() }, [carregar])
-
-  async function criar(e: React.FormEvent) {
-    e.preventDefault()
-    const saldo = f.saldo.trim() === '' ? 0 : lerValor(f.saldo)
-    if (saldo === null) return app.avisar('Saldo inicial inválido.', true)
-    const { error } = await supabase.rpc('criar_conta', { p_rep: rep.id, p_nome: f.nome, p_tipo: f.tipo, p_saldo: saldo })
-    if (error) return app.avisar(error.message, true)
-    setNova(false); setF({ nome: '', tipo: 'casa', saldo: '' }); app.avisar('Conta criada.'); carregar()
-  }
-  async function remover(s: SaldoConta) {
-    if (!confirm(`Remover a conta ${s.nome}?`)) return
-    const { error } = await supabase.rpc('remover_conta', { p_conta: s.conta_id })
-    if (error) return app.avisar(error.message, true)
-    app.avisar('Conta removida.'); carregar()
-  }
-
-  const total = saldos.reduce((t, s) => t + s.saldo, 0)
-  return (
-    <>
-      <div className="card">
-        <span className="muted small">Saldo total das contas</span>
-        <span className={'num' + (total < 0 ? ' ruim' : '')}>{reais(total)}</span>
-      </div>
-      <div className="linha entre"><h2>Saldo por conta</h2><button className="btn mini primario" onClick={() => setNova(true)}>Nova conta</button></div>
-      {saldos.length === 0 && <div className="card vazio">Crie a primeira conta (ex.: Caixa da casa, Caixa da festa) para começar a lançar.</div>}
-      {saldos.map((s) => (
-        <div className="card" key={s.conta_id}>
-          <div className="linha entre"><b>{s.nome}</b><span className="chip">{TIPOS[s.tipo]}</span></div>
-          <span className={'num' + (s.saldo < 0 ? ' ruim' : '')}>{reais(s.saldo)}</span>
-          <span className="small muted">Entradas {reais(s.entradas)} · saídas {reais(s.saidas)} · inicial {reais(s.saldo_inicial)}</span>
-          {s.movimentos === 0 && <div><button className="btn mini perigo" onClick={() => remover(s)}>Remover conta</button></div>}
-        </div>
-      ))}
-      {nova && (
-        <Folha titulo="Nova conta" onFechar={() => setNova(false)}>
-          <form className="pilha" onSubmit={criar}>
-            <Campo rotulo="Nome da conta"><input value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} placeholder="Ex.: Caixa da casa" required /></Campo>
-            <Campo rotulo="Tipo">
-              <select value={f.tipo} onChange={(e) => setF({ ...f, tipo: e.target.value })}>{Object.entries(TIPOS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
-            </Campo>
-            <Campo rotulo="Saldo inicial (R$)"><input inputMode="decimal" value={f.saldo} onChange={(e) => setF({ ...f, saldo: e.target.value })} placeholder="0,00" /></Campo>
-            <button className="btn primario">Criar conta</button>
-          </form>
-        </Folha>
-      )}
-    </>
-  )
-}
-
-/* ------------------------------------------------------- Lançamentos */
-function Lancamentos() {
-  const app = useApp()
-  const rep = app.republica!
-  const [contas, setContas] = useState<Conta[]>([])
   const [lancs, setLancs] = useState<Lancamento[]>([])
-  const [filtro, setFiltro] = useState('')
-  const [novo, setNovo] = useState(false)
-  const [f, setF] = useState({ conta: '', tipo: 'despesa', valor: '', desc: '', cat: '', data: hoje() })
+  const [cobs, setCobs] = useState<Cobranca[]>([])
+  const [itens, setItens] = useState<CobrancaItem[]>([])
+  const [cats, setCats] = useState<Categoria[]>([])
+  const [menu, setMenu] = useState(false)
+  const [modal, setModal] = useState<Modal>((['despesa', 'receita', 'cobranca', 'categoria'] as const).find((k) => k === intencao) || null)
+  const [editando, setEditando] = useState<string | null>(null)
+  const [filtroCat, setFiltroCat] = useState('')
+  const [grafico, setGrafico] = useState<'pizza' | 'colunas' | 'barras'>('pizza')
 
   const carregar = useCallback(async () => {
-    const [c, l] = await Promise.all([
-      supabase.from('contas').select('*').eq('republica_id', rep.id).order('created_at'),
+    const [s, l, c, i, k] = await Promise.all([
+      supabase.rpc('saldos_contas', { p_rep: rep.id }),
       supabase.from('lancamentos').select('*').eq('republica_id', rep.id).order('data', { ascending: false }).order('created_at', { ascending: false }).limit(200),
+      supabase.from('cobrancas').select('*').eq('republica_id', rep.id).order('created_at', { ascending: false }),
+      supabase.from('cobranca_itens').select('*').eq('republica_id', rep.id),
+      supabase.from('categorias').select('id,nome,icone,cor').eq('republica_id', rep.id).order('created_at'),
     ])
-    setContas((c.data || []) as Conta[]); setLancs(((l.data || []) as Lancamento[]).map((x) => ({ ...x, valor: Number(x.valor) })))
+    setSaldos(((s.data || []) as SaldoConta[]).map((x) => ({ ...x, saldo: Number(x.saldo), entradas: Number(x.entradas), saidas: Number(x.saidas), saldo_inicial: Number(x.saldo_inicial), movimentos: Number(x.movimentos) })))
+    setLancs(((l.data || []) as Lancamento[]).map((x) => ({ ...x, valor: Number(x.valor) })))
+    setCobs(((c.data || []) as Cobranca[]).map((x) => ({ ...x, valor: Number(x.valor) })))
+    setItens(((i.data || []) as CobrancaItem[]).map((x) => ({ ...x, valor: Number(x.valor) })))
+    setCats((k.data || []) as Categoria[])
   }, [rep.id])
   useEffect(() => { carregar() }, [carregar])
 
-  async function criar(e: React.FormEvent) {
-    e.preventDefault()
-    const v = lerValor(f.valor)
-    if (v === null || v <= 0) return app.avisar('Informe um valor maior que zero.', true)
-    const { error } = await supabase.rpc('lancar', { p_rep: rep.id, p_conta: f.conta || contas[0]?.id, p_tipo: f.tipo, p_valor: v, p_desc: f.desc, p_categoria: f.cat, p_data: f.data })
+  const arrecadado = saldos.reduce((t, s) => t + s.entradas, 0)
+  const gasto = saldos.reduce((t, s) => t + s.saidas, 0)
+  const saldoTotal = saldos.reduce((t, s) => t + s.saldo, 0)
+  const aReceber = itens.filter((i) => !i.pago).reduce((t, i) => t + i.valor, 0)
+  const nomeConta = (id: string) => saldos.find((c) => c.conta_id === id)?.nome || 'Conta'
+  const cat = (n: string | null) => cats.find((c) => c.nome === n)
+
+  async function pagar(it: CobrancaItem) {
+    const { error } = await supabase.rpc('marcar_pago', { p_item: it.id, p_pago: !it.pago })
     if (error) return app.avisar(error.message, true)
-    setNovo(false); setF({ ...f, valor: '', desc: '', cat: '' }); app.avisar('Lançamento salvo.'); carregar()
+    carregar()
   }
-  async function remover(l: Lancamento) {
+  async function removerCob(c: Cobranca) {
+    if (!confirm(`Remover a cobrança "${c.titulo}"?`)) return
+    const { error } = await supabase.rpc('remover_cobranca', { p_cob: c.id })
+    if (error) return app.avisar(error.message, true)
+    app.avisar('Cobrança removida.'); carregar()
+  }
+  async function removerLanc(l: Lancamento) {
     if (!confirm(`Remover "${l.descricao}"?`)) return
     const { error } = await supabase.rpc('remover_lancamento', { p_id: l.id })
     if (error) return app.avisar(error.message, true)
     app.avisar('Lançamento removido.'); carregar()
   }
+  async function removerCat(c: Categoria) {
+    if (!confirm(`Remover a categoria ${c.nome}? Os lançamentos antigos continuam, só perdem o ícone e a cor.`)) return
+    const { error } = await supabase.rpc('remover_categoria', { p_id: c.id })
+    if (error) return app.avisar(error.message, true)
+    carregar()
+  }
+  async function removerConta(s: SaldoConta) {
+    if (!confirm(`Remover a conta ${s.nome}?`)) return
+    const { error } = await supabase.rpc('remover_conta', { p_conta: s.conta_id })
+    if (error) return app.avisar(error.message, true)
+    app.avisar('Conta removida.'); carregar()
+  }
+  async function definirQuemPaga(c: Cobranca, sel: string[]) {
+    const { error } = await supabase.rpc('definir_membros_cobranca', { p_cob: c.id, p_membros: sel })
+    if (error) return app.avisar(error.message, true)
+    carregar()
+  }
+  const fechar = (ok?: boolean) => { setModal(null); if (ok) carregar() }
 
-  const lista = lancs.filter((l) => !filtro || l.conta_id === filtro)
-  const nomeConta = (id: string) => contas.find((c) => c.id === id)?.nome || 'Conta'
+  // gráfico de gastos por categoria
+  const gastosCat = useMemo(() => {
+    const m = new Map<string, number>()
+    lancs.filter((l) => l.tipo === 'despesa').forEach((l) => m.set(l.categoria || 'Sem categoria', (m.get(l.categoria || 'Sem categoria') || 0) + l.valor))
+    return [...m.entries()].map(([nome, valor], i) => ({ nome, valor, cor: cats.find((c) => c.nome === nome)?.cor || CORES[i % CORES.length][1], icone: cats.find((c) => c.nome === nome)?.icone || '' })).sort((a, b) => b.valor - a.valor)
+  }, [lancs, cats])
+  const totalGastos = gastosCat.reduce((t, g) => t + g.valor, 0)
+  const lista = lancs.filter((l) => !filtroCat || (l.categoria || '') === filtroCat)
+
   return (
     <>
-      <div className="linha entre quebra">
-        <select aria-label="Conta" style={{ width: 'auto', minWidth: 160 }} value={filtro} onChange={(e) => setFiltro(e.target.value)}>
-          <option value="">Todas as contas</option>{contas.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
-        </select>
-        <button className="btn mini primario" disabled={contas.length === 0} onClick={() => setNovo(true)}>Novo lançamento</button>
-      </div>
-      {contas.length === 0 && <div className="card vazio">Crie uma conta em “Contas” antes de lançar.</div>}
-      {contas.length > 0 && lista.length === 0 && <div className="card vazio">Nenhum lançamento ainda.</div>}
-      {lista.map((l) => (
-        <div className="card" key={l.id}>
-          <div className="linha entre">
-            <b>{l.descricao}</b>
-            <b style={{ color: l.tipo === 'receita' ? 'var(--ok-fg)' : 'var(--ruim-fg)' }}>{l.tipo === 'receita' ? '+' : '−'} {reais(l.valor)}</b>
+      <div className="acao-fixa">
+        <button className="btn primario" onClick={() => setMenu(!menu)}>+ Lançar</button>
+        {menu && (
+          <div className="bloco menu" style={{ top: 52, right: 0, minWidth: 250, padding: 8 }}>
+            {([['Despesa', 'despesa', '−'], ['Receita', 'receita', '+'], ['Nova cobrança', 'cobranca', '$'], ['Nova categoria', 'categoria', '#']] as [string, Modal, string][]).map(([n, k, s]) => (
+              <button key={n} onClick={() => { setMenu(false); setModal(k) }}><b style={{ display: 'inline-block', width: 28 }}>{s}</b>{n}</button>
+            ))}
           </div>
-          <div className="linha entre">
-            <span className="small muted">{dataCurta(l.data)} · {nomeConta(l.conta_id)}{l.categoria ? ' · ' + l.categoria : ''}{l.origem !== 'manual' ? ' · automático' : ''}</span>
-            {l.origem === 'manual' && <button className="btn mini perigo" onClick={() => remover(l)}>Remover</button>}
+        )}
+      </div>
+
+      <div className="cartoes">
+        <div className="bloco"><span className="muted small">Total arrecadado</span><span className="grande" style={{ color: 'var(--ok-fg)' }}>{reais(arrecadado)}</span><span className="small muted">Cobranças pagas e receitas lançadas</span></div>
+        <div className="bloco"><span className="muted small">Total gasto</span><span className="grande" style={{ color: 'var(--ruim-fg)' }}>{reais(gasto)}</span><span className="small muted">Despesas lançadas</span></div>
+        <div className="bloco"><span className="muted small">Saldo atual</span><span className="grande">{reais(saldoTotal)}</span><span className="small muted">Soma de todas as contas</span></div>
+        <div className="bloco"><span className="muted small">Ainda a receber</span><span className="grande" style={{ color: 'var(--aviso-fg)' }}>{reais(aReceber)}</span><span className="small muted">Cobranças que faltam pagar</span></div>
+      </div>
+
+      <div className="bloco" style={{ gap: 14 }}>
+        <div><h2>Cobranças dos integrantes</h2><span className="small muted">Aluguel, caixinha ou qualquer valor. Você define o valor, o vencimento e quem paga. Cada integrante só vê as cobranças criadas para ele.</span></div>
+        {cobs.length === 0 && <div className="card vazio">Nenhuma cobrança criada ainda. Use “+ Lançar → Nova cobrança”.</div>}
+        <div className="cartoes">
+          {cobs.map((c) => {
+            const its = itens.filter((i) => i.cobranca_id === c.id)
+            const pagos = its.filter((i) => i.pago).length
+            const atrasada = c.vencimento && c.vencimento < hoje() && pagos < its.length
+            return (
+              <div className="card" key={c.id} style={{ flex: '1 1 320px', background: 'var(--suave)' }}>
+                <div className="linha entre">
+                  <b>{c.titulo}</b>
+                  <span className="linha">
+                    <button className="btn mini" onClick={() => setEditando(editando === c.id ? null : c.id)}>{editando === c.id ? 'Pronto' : 'Quem paga'}</button>
+                    {pagos === 0 && <button className="btn mini perigo" onClick={() => removerCob(c)}>Remover</button>}
+                  </span>
+                </div>
+                <span className="small">{reais(c.valor)} por pessoa{c.vencimento ? ' · vence ' + dataCurta(c.vencimento) : ''} · {nomeConta(c.conta_id || '')}</span>
+                <div className="barra"><i style={{ width: its.length ? (pagos / its.length) * 100 + '%' : '0%' }} /></div>
+                <span className={'small ' + (atrasada ? 'ruim-txt' : 'muted')} style={atrasada ? { color: 'var(--ruim-fg)' } : undefined}>{pagos} de {its.length} pagaram · faltam {reais((its.length - pagos) * c.valor)}{atrasada ? ' · vencida' : ''}</span>
+                {editando === c.id && (
+                  <div className="card">
+                    <span className="small muted">Toque para incluir ou tirar. Quem já pagou não sai.</span>
+                    <div className="linha quebra">
+                      {ativos.map((m) => {
+                        const it = its.find((i) => i.membro_id === m.id)
+                        const dentro = !!it
+                        return <button key={m.id} className={'btn mini' + (dentro ? ' primario' : '')} disabled={!!it?.pago}
+                          onClick={() => definirQuemPaga(c, dentro ? its.filter((i) => i.membro_id !== m.id).map((i) => i.membro_id) : [...its.map((i) => i.membro_id), m.id])}>{nomeDoMembro(app, m.id)}</button>
+                      })}
+                    </div>
+                  </div>
+                )}
+                <span className="small muted">Toque no nome para marcar quem já pagou.</span>
+                <div className="linha quebra">
+                  {its.map((i) => (
+                    <button key={i.id} className="chip" style={{ minHeight: 36, border: 0, cursor: 'pointer', background: i.pago ? 'var(--ok-bg)' : 'var(--aviso-bg)', color: i.pago ? 'var(--ok-fg)' : 'var(--aviso-fg)' }} onClick={() => pagar(i)}>
+                      {nomeDoMembro(app, i.membro_id)} · {i.pago ? 'pagou' : 'falta pagar'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      <div className="cartoes">
+        <div className="bloco" style={{ flex: '1 1 380px' }}>
+          <div className="linha entre quebra">
+            <h2>Lançamentos</h2>
+            {cats.length > 0 && (
+              <select aria-label="Categoria" style={{ width: 'auto', minWidth: 150 }} value={filtroCat} onChange={(e) => setFiltroCat(e.target.value)}>
+                <option value="">Todas as categorias</option>{cats.map((c) => <option key={c.id} value={c.nome}>{c.nome}</option>)}
+              </select>
+            )}
+          </div>
+          {lista.length === 0 && <span className="small muted">Nenhum lançamento ainda. Use “+ Lançar”.</span>}
+          {lista.map((l) => {
+            const k = cat(l.categoria)
+            return (
+              <div className="lista-linha" key={l.id}>
+                <div className="grow">
+                  <b>{k ? k.icone + ' ' : ''}{l.descricao}</b><br />
+                  <span className="small muted">{dataCurta(l.data)} · {nomeConta(l.conta_id)}{l.categoria ? ' · ' + l.categoria : ''}{l.origem !== 'manual' ? ' · automático' : ''}</span>
+                </div>
+                <b style={{ color: l.tipo === 'receita' ? 'var(--ok-fg)' : 'var(--ruim-fg)', whiteSpace: 'nowrap' }}>{l.tipo === 'receita' ? '+' : '−'} {reais(l.valor)}</b>
+                {l.origem === 'manual' && <button className="btn mini" aria-label="Remover lançamento" onClick={() => removerLanc(l)}>Remover</button>}
+              </div>
+            )
+          })}
+        </div>
+
+        <div className="bloco" style={{ flex: '1 1 380px' }}>
+          <div className="linha entre"><h2>Categorias da república</h2><button className="btn mini" onClick={() => setModal('categoria')}>+ Nova</button></div>
+          <span className="small muted">Cada categoria tem ícone e cor. A cor é a que aparece nos gráficos.</span>
+          {cats.length === 0 && <span className="small muted">Nenhuma categoria ainda. Crie as suas (ex.: Internet, Limpeza).</span>}
+          <div className="linha quebra">
+            {cats.map((c) => (
+              <span key={c.id} className="linha" style={{ background: 'var(--neutro-bg)', borderLeft: `5px solid ${c.cor}`, borderRadius: 10, padding: '4px 6px 4px 12px', gap: 8 }}>
+                <span style={{ fontSize: 18 }}>{c.icone}</span><b className="small">{c.nome}</b>
+                <button className="btn mini" style={{ minHeight: 32, padding: '0 10px' }} aria-label={'Remover ' + c.nome} onClick={() => removerCat(c)}>x</button>
+              </span>
+            ))}
           </div>
         </div>
-      ))}
-      {novo && (
-        <Folha titulo="Novo lançamento" onFechar={() => setNovo(false)}>
-          <form className="pilha" onSubmit={criar}>
-            <div className="seg" role="group" aria-label="Tipo">
-              <button type="button" aria-pressed={f.tipo === 'despesa'} onClick={() => setF({ ...f, tipo: 'despesa' })}>Despesa</button>
-              <button type="button" aria-pressed={f.tipo === 'receita'} onClick={() => setF({ ...f, tipo: 'receita' })}>Receita</button>
+      </div>
+
+      <div className="cartoes">
+        <div className="bloco" style={{ flex: '1 1 380px' }}>
+          <div className="linha entre quebra">
+            <h2>Gastos por categoria</h2>
+            <div className="seg" role="group" aria-label="Tipo de gráfico" style={{ width: 'auto' }}>
+              {([['pizza', 'Pizza'], ['colunas', 'Colunas'], ['barras', 'Barras']] as const).map(([k, n]) => <button key={k} aria-pressed={grafico === k} onClick={() => setGrafico(k)}>{n}</button>)}
             </div>
-            <Campo rotulo="Conta"><select value={f.conta || contas[0]?.id} onChange={(e) => setF({ ...f, conta: e.target.value })}>{contas.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}</select></Campo>
-            <Campo rotulo="Valor (R$)"><input inputMode="decimal" value={f.valor} onChange={(e) => setF({ ...f, valor: e.target.value })} required /></Campo>
-            <Campo rotulo="Descrição"><input value={f.desc} onChange={(e) => setF({ ...f, desc: e.target.value })} placeholder="Ex.: Conta de luz" required /></Campo>
-            <div className="grade2">
-              <Campo rotulo="Categoria (opcional)"><input value={f.cat} onChange={(e) => setF({ ...f, cat: e.target.value })} placeholder="Ex.: Contas" /></Campo>
-              <Campo rotulo="Data"><input type="date" value={f.data} onChange={(e) => setF({ ...f, data: e.target.value })} /></Campo>
+          </div>
+          {gastosCat.length === 0 && <span className="small muted">Ainda não há despesas para este gráfico.</span>}
+          {gastosCat.length > 0 && grafico === 'pizza' && (() => {
+            let acc = 0
+            const fatias = gastosCat.map((g) => { const a = acc; acc += (g.valor / totalGastos) * 100; return `${g.cor} ${a}% ${acc}%` }).join(', ')
+            return <div style={{ display: 'flex', justifyContent: 'center' }}><div style={{ position: 'relative', width: 170, height: 170, borderRadius: '50%', background: `conic-gradient(${fatias})` }}>
+              <div style={{ position: 'absolute', inset: 40, borderRadius: '50%', background: 'var(--card)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 13, textAlign: 'center' }}>{reais(totalGastos)}</div></div></div>
+          })()}
+          {gastosCat.length > 0 && grafico === 'colunas' && (
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, height: 150 }}>
+              {gastosCat.map((g) => (
+                <div key={g.nome} style={{ flex: '1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%', gap: 4 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700 }}>{reais(g.valor)}</span>
+                  <div style={{ width: '100%', maxWidth: 48, height: Math.max(6, (g.valor / gastosCat[0].valor) * 100) + '%', background: g.cor, borderRadius: '6px 6px 0 0' }} />
+                </div>
+              ))}
             </div>
-            <button className="btn primario">Salvar lançamento</button>
-          </form>
-        </Folha>
-      )}
+          )}
+          {gastosCat.map((g) => (
+            <div className="linha" key={g.nome}>
+              <span style={{ width: 12, height: 12, borderRadius: 3, background: g.cor, flex: '0 0 12px' }} />
+              <span className="grow small">{g.icone} {g.nome}</span>
+              {grafico === 'barras' && <div className="barra" style={{ flex: '2 1 80px' }}><i style={{ width: (g.valor / gastosCat[0].valor) * 100 + '%', background: g.cor }} /></div>}
+              <b className="small">{reais(g.valor)} · {Math.round((g.valor / totalGastos) * 100)}%</b>
+            </div>
+          ))}
+        </div>
+
+        <div className="bloco" style={{ flex: '1 1 380px' }}>
+          <div className="linha entre"><h2>Saldo por conta</h2><button className="btn mini primario" onClick={() => setModal('conta')}>+ Nova conta</button></div>
+          <span className="small muted">Conta é o lugar onde o dinheiro da república fica guardado: caixa em dinheiro, conta do banco, Pix, caixa da festa. Ao lançar você escolhe de qual conta o dinheiro sai ou entra.</span>
+          {saldos.length === 0 && <span className="small muted">Nenhuma conta ainda. Toque em + Nova conta para criar a primeira.</span>}
+          {saldos.map((s) => (
+            <div className="lista-linha" key={s.conta_id}>
+              <div className="grow"><b>{s.nome}</b> <span className="chip">{TIPOS[s.tipo]}</span><br /><span className="small muted">Entradas {reais(s.entradas)} · saídas {reais(s.saidas)} · inicial {reais(s.saldo_inicial)}</span></div>
+              <b style={{ color: s.saldo < 0 ? 'var(--ruim-fg)' : undefined }}>{reais(s.saldo)}</b>
+              {s.movimentos === 0 && <button className="btn mini" onClick={() => removerConta(s)}>Remover</button>}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {(modal === 'despesa' || modal === 'receita') && <FormLancamento tipoInicial={modal} contas={saldos} cats={cats} onFechar={fechar} onNovaConta={() => setModal('conta')} />}
+      {modal === 'cobranca' && <FormCobranca contas={saldos} ativos={ativos.map((m) => m.id)} onFechar={fechar} onNovaConta={() => setModal('conta')} />}
+      {modal === 'categoria' && <FormCategoria onFechar={fechar} />}
+      {modal === 'conta' && <FormConta onFechar={fechar} />}
     </>
   )
 }
 
-/* --------------------------------------------------------- Cobranças */
-function Cobrancas() {
+/* ------------------------------------------------------------ Formulários */
+function FormConta({ onFechar }: { onFechar: (ok?: boolean) => void }) {
   const app = useApp()
-  const rep = app.republica!
-  const [cobs, setCobs] = useState<Cobranca[]>([])
-  const [itens, setItens] = useState<CobrancaItem[]>([])
-  const [contas, setContas] = useState<Conta[]>([])
-  const [aberta, setAberta] = useState<string | null>(null)
-  const [nova, setNova] = useState(false)
-  const ativos = useMemo(() => app.membros.filter((m) => m.ativo), [app.membros])
-  const [f, setF] = useState({ titulo: '', modo: 'pessoa', valor: '', venc: '', conta: '', sel: [] as string[] })
-
-  const carregar = useCallback(async () => {
-    const [c, i, ct] = await Promise.all([
-      supabase.from('cobrancas').select('*').eq('republica_id', rep.id).order('created_at', { ascending: false }),
-      supabase.from('cobranca_itens').select('*').eq('republica_id', rep.id),
-      supabase.from('contas').select('*').eq('republica_id', rep.id).order('created_at'),
-    ])
-    setCobs(((c.data || []) as Cobranca[]).map((x) => ({ ...x, valor: Number(x.valor) })))
-    setItens(((i.data || []) as CobrancaItem[]).map((x) => ({ ...x, valor: Number(x.valor) })))
-    setContas((ct.data || []) as Conta[])
-  }, [rep.id])
-  useEffect(() => { carregar() }, [carregar])
-
-  function abrirNova() {
-    setF({ titulo: '', modo: 'pessoa', valor: '', venc: '', conta: contas[0]?.id || '', sel: ativos.map((m) => m.id) })
-    setNova(true)
+  const [f, setF] = useState({ nome: '', tipo: 'casa', saldo: '' })
+  async function criar(e: React.FormEvent) {
+    e.preventDefault()
+    const saldo = f.saldo.trim() === '' ? 0 : lerValor(f.saldo)
+    if (saldo === null) return app.avisar('Saldo inicial inválido.', true)
+    const { error } = await supabase.rpc('criar_conta', { p_rep: app.republica!.id, p_nome: f.nome, p_tipo: f.tipo, p_saldo: saldo })
+    if (error) return app.avisar(error.message, true)
+    app.avisar('Conta criada.'); onFechar(true)
   }
+  return (
+    <Folha titulo="Nova conta" onFechar={() => onFechar()}>
+      <form className="pilha" onSubmit={criar}>
+        <Campo rotulo="Nome da conta"><input value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} placeholder="Ex.: Caixa da festa" required /></Campo>
+        <b className="small">Tipo</b>
+        <div className="linha quebra">{Object.entries(TIPOS).map(([k, v]) => <button type="button" key={k} className={'btn mini' + (f.tipo === k ? ' primario' : '')} onClick={() => setF({ ...f, tipo: k })}>{v}</button>)}</div>
+        <Campo rotulo="Quanto já tem nela hoje (opcional)"><input inputMode="decimal" value={f.saldo} onChange={(e) => setF({ ...f, saldo: e.target.value })} placeholder="Saldo inicial em R$, ex.: 150,00" /></Campo>
+        <button className="btn primario">Criar conta</button>
+      </form>
+    </Folha>
+  )
+}
+
+function FormCategoria({ onFechar }: { onFechar: (ok?: boolean) => void }) {
+  const app = useApp()
+  const [nome, setNome] = useState('')
+  const [icone, setIcone] = useState(ICONES[0])
+  const [cor, setCor] = useState(CORES[0][1])
+  async function salvar(e: React.FormEvent) {
+    e.preventDefault()
+    const { error } = await supabase.rpc('criar_categoria', { p_rep: app.republica!.id, p_nome: nome, p_icone: icone, p_cor: cor })
+    if (error) return app.avisar(error.message, true)
+    app.avisar('Categoria criada.'); onFechar(true)
+  }
+  return (
+    <Folha titulo="Nova categoria" onFechar={() => onFechar()}>
+      <form className="pilha" onSubmit={salvar}>
+        <Campo rotulo="Nome"><input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome, ex.: Internet" required /></Campo>
+        <b className="small">Ícone</b>
+        <div className="linha quebra">{ICONES.map((i) => <button type="button" key={i} aria-label={'Ícone ' + i} onClick={() => setIcone(i)} style={{ minWidth: 44, minHeight: 44, borderRadius: 10, fontSize: 20, border: `2px solid ${icone === i ? 'var(--acento)' : 'var(--linha)'}`, background: 'transparent' }}>{i}</button>)}</div>
+        <b className="small">Cor no gráfico</b>
+        <div className="cores-sel">{CORES.map(([n, c]) => <button type="button" key={c} aria-label={n} onClick={() => setCor(c)} style={{ width: 44, height: 44, borderRadius: '50%', border: `3px solid ${cor === c ? 'var(--texto)' : 'transparent'}`, background: c }} />)}</div>
+        <button className="btn primario">Salvar categoria</button>
+      </form>
+    </Folha>
+  )
+}
+
+function FormLancamento({ tipoInicial, contas, cats, onFechar, onNovaConta }: { tipoInicial: 'despesa' | 'receita'; contas: SaldoConta[]; cats: Categoria[]; onFechar: (ok?: boolean) => void; onNovaConta: () => void }) {
+  const app = useApp()
+  const [f, setF] = useState({ conta: contas[0]?.conta_id || '', tipo: tipoInicial as string, valor: '', desc: '', cat: '', data: hoje() })
+  async function criar(e: React.FormEvent) {
+    e.preventDefault()
+    const v = lerValor(f.valor)
+    if (v === null || v <= 0) return app.avisar('Informe um valor maior que zero.', true)
+    const { error } = await supabase.rpc('lancar', { p_rep: app.republica!.id, p_conta: f.conta, p_tipo: f.tipo, p_valor: v, p_desc: f.desc, p_categoria: f.cat, p_data: f.data })
+    if (error) return app.avisar(error.message, true)
+    app.avisar('Lançamento salvo.'); onFechar(true)
+  }
+  if (contas.length === 0) return (
+    <Folha titulo="Novo lançamento" onFechar={() => onFechar()}>
+      <p className="muted">Antes de lançar, crie uma conta: é dela que o dinheiro sai ou entra.</p>
+      <button className="btn primario" onClick={onNovaConta}>+ Nova conta</button>
+    </Folha>
+  )
+  return (
+    <Folha titulo={f.tipo === 'despesa' ? 'Nova despesa' : 'Nova receita'} onFechar={() => onFechar()}>
+      <form className="pilha" onSubmit={criar}>
+        <div className="seg" role="group" aria-label="Tipo">
+          <button type="button" aria-pressed={f.tipo === 'despesa'} onClick={() => setF({ ...f, tipo: 'despesa' })}>Despesa</button>
+          <button type="button" aria-pressed={f.tipo === 'receita'} onClick={() => setF({ ...f, tipo: 'receita' })}>Receita</button>
+        </div>
+        <Campo rotulo="Conta"><select value={f.conta} onChange={(e) => setF({ ...f, conta: e.target.value })}>{contas.map((c) => <option key={c.conta_id} value={c.conta_id}>{c.nome}</option>)}</select></Campo>
+        <Campo rotulo="Valor (R$)"><input inputMode="decimal" value={f.valor} onChange={(e) => setF({ ...f, valor: e.target.value })} required /></Campo>
+        <Campo rotulo="Descrição"><input value={f.desc} onChange={(e) => setF({ ...f, desc: e.target.value })} placeholder="Ex.: Conta de luz" required /></Campo>
+        <div className="grade2">
+          <Campo rotulo="Categoria (opcional)">
+            <select value={f.cat} onChange={(e) => setF({ ...f, cat: e.target.value })}><option value="">Sem categoria</option>{cats.map((c) => <option key={c.id} value={c.nome}>{c.icone} {c.nome}</option>)}</select>
+          </Campo>
+          <Campo rotulo="Data"><input type="date" value={f.data} onChange={(e) => setF({ ...f, data: e.target.value })} /></Campo>
+        </div>
+        <button className="btn primario">Salvar lançamento</button>
+      </form>
+    </Folha>
+  )
+}
+
+function FormCobranca({ contas, ativos, onFechar, onNovaConta }: { contas: SaldoConta[]; ativos: string[]; onFechar: (ok?: boolean) => void; onNovaConta: () => void }) {
+  const app = useApp()
+  const [f, setF] = useState({ titulo: '', modo: 'pessoa', valor: '', venc: '', conta: contas[0]?.conta_id || '', sel: ativos })
   async function criar(e: React.FormEvent) {
     e.preventDefault()
     const v = lerValor(f.valor)
     if (v === null || v <= 0) return app.avisar('Informe o valor.', true)
     if (f.sel.length === 0) return app.avisar('Escolha ao menos um integrante.', true)
     const porPessoa = f.modo === 'total' ? Math.round((v / f.sel.length) * 100) / 100 : v
-    const { error } = await supabase.rpc('criar_cobranca', { p_rep: rep.id, p_titulo: f.titulo, p_valor: porPessoa, p_venc: f.venc || null, p_conta: f.conta || contas[0]?.id, p_membros: f.sel })
+    const { error } = await supabase.rpc('criar_cobranca', { p_rep: app.republica!.id, p_titulo: f.titulo, p_valor: porPessoa, p_venc: f.venc || null, p_conta: f.conta, p_membros: f.sel })
     if (error) return app.avisar(error.message, true)
-    setNova(false); app.avisar(`Cobrança criada: ${reais(porPessoa)} por pessoa.`); carregar()
+    app.avisar(`Cobrança criada: ${reais(porPessoa)} por pessoa.`); onFechar(true)
   }
-  async function pagar(it: CobrancaItem, pago: boolean) {
-    const { error } = await supabase.rpc('marcar_pago', { p_item: it.id, p_pago: pago })
-    if (error) return app.avisar(error.message, true)
-    carregar()
-  }
-  async function remover(c: Cobranca) {
-    if (!confirm(`Remover a cobrança "${c.titulo}"?`)) return
-    const { error } = await supabase.rpc('remover_cobranca', { p_cob: c.id })
-    if (error) return app.avisar(error.message, true)
-    app.avisar('Cobrança removida.'); carregar()
-  }
-
+  if (contas.length === 0) return (
+    <Folha titulo="Nova cobrança" onFechar={() => onFechar()}>
+      <p className="muted">Antes de cobrar, crie uma conta: é nela que o dinheiro das cobranças entra.</p>
+      <button className="btn primario" onClick={onNovaConta}>+ Nova conta</button>
+    </Folha>
+  )
   const previa = (() => { const v = lerValor(f.valor); return v && f.sel.length ? (f.modo === 'total' ? v / f.sel.length : v) : null })()
   return (
-    <>
-      <div className="linha entre"><h2>Cobranças</h2><button className="btn mini primario" disabled={contas.length === 0} onClick={abrirNova}>Nova cobrança</button></div>
-      {contas.length === 0 && <div className="card vazio">Crie uma conta em “Contas”: é nela que o dinheiro das cobranças entra.</div>}
-      {contas.length > 0 && cobs.length === 0 && <div className="card vazio">Nenhuma cobrança ainda. Crie a mensalidade ou a caixinha e marque quem já pagou.</div>}
-      {cobs.map((c) => {
-        const its = itens.filter((i) => i.cobranca_id === c.id)
-        const pagos = its.filter((i) => i.pago).length
-        const atrasada = c.vencimento && c.vencimento < hoje() && pagos < its.length
-        return (
-          <div className="card" key={c.id}>
-            <button className="linha entre" style={{ background: 'none', border: 0, padding: 0, textAlign: 'left' }} onClick={() => setAberta(aberta === c.id ? null : c.id)}>
-              <span className="grow"><b>{c.titulo}</b><br /><span className="small muted">{reais(c.valor)} por pessoa{c.vencimento ? ' · vence ' + dataCurta(c.vencimento) : ''}</span></span>
-              <span className={'chip ' + (pagos === its.length ? 'ok' : atrasada ? 'ruim' : 'aviso')}>{pagos}/{its.length} pagos</span>
-            </button>
-            {aberta === c.id && (
-              <>
-                {its.map((i) => (
-                  <label key={i.id} className="linha entre">
-                    <span>{nomeDoMembro(app, i.membro_id)}</span>
-                    <span className="linha"><span className="small muted">{i.pago ? 'pago' : 'em aberto'}</span>
-                      <input type="checkbox" checked={i.pago} onChange={(e) => pagar(i, e.target.checked)} aria-label={'Pago: ' + nomeDoMembro(app, i.membro_id)} /></span>
-                  </label>
-                ))}
-                {pagos === 0 && <div><button className="btn mini perigo" onClick={() => remover(c)}>Remover cobrança</button></div>}
-              </>
-            )}
-          </div>
-        )
-      })}
-      {nova && (
-        <Folha titulo="Nova cobrança" onFechar={() => setNova(false)}>
-          <form className="pilha" onSubmit={criar}>
-            <Campo rotulo="Nome"><input value={f.titulo} onChange={(e) => setF({ ...f, titulo: e.target.value })} placeholder="Ex.: Mensalidade de novembro" required /></Campo>
-            <div className="seg" role="group" aria-label="Como dividir">
-              <button type="button" aria-pressed={f.modo === 'pessoa'} onClick={() => setF({ ...f, modo: 'pessoa' })}>Valor por pessoa</button>
-              <button type="button" aria-pressed={f.modo === 'total'} onClick={() => setF({ ...f, modo: 'total' })}>Dividir um total</button>
-            </div>
-            <Campo rotulo={f.modo === 'total' ? 'Valor total (R$)' : 'Valor por pessoa (R$)'}><input inputMode="decimal" value={f.valor} onChange={(e) => setF({ ...f, valor: e.target.value })} required /></Campo>
-            {previa !== null && <span className="chip ok" style={{ alignSelf: 'flex-start' }}>{reais(previa)} por pessoa · {f.sel.length} pessoa(s)</span>}
-            <div className="grade2">
-              <Campo rotulo="Vencimento"><input type="date" value={f.venc} onChange={(e) => setF({ ...f, venc: e.target.value })} /></Campo>
-              <Campo rotulo="Entra na conta"><select value={f.conta} onChange={(e) => setF({ ...f, conta: e.target.value })}>{contas.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}</select></Campo>
-            </div>
-            <b className="small">Quem paga</b>
-            {ativos.map((m) => (
-              <label key={m.id} className="linha"><input type="checkbox" checked={f.sel.includes(m.id)} onChange={(e) => setF({ ...f, sel: e.target.checked ? [...f.sel, m.id] : f.sel.filter((x) => x !== m.id) })} />{nomeDoMembro(app, m.id)}</label>
-            ))}
-            <button className="btn primario">Criar cobrança</button>
-          </form>
-        </Folha>
-      )}
-    </>
+    <Folha titulo="Nova cobrança" onFechar={() => onFechar()}>
+      <form className="pilha" onSubmit={criar}>
+        <Campo rotulo="1. Nome"><input value={f.titulo} onChange={(e) => setF({ ...f, titulo: e.target.value })} placeholder="Ex.: Aluguel de dezembro" required /></Campo>
+        <div className="seg" role="group" aria-label="Como dividir">
+          <button type="button" aria-pressed={f.modo === 'pessoa'} onClick={() => setF({ ...f, modo: 'pessoa' })}>Valor por pessoa</button>
+          <button type="button" aria-pressed={f.modo === 'total'} onClick={() => setF({ ...f, modo: 'total' })}>Dividir um total</button>
+        </div>
+        <Campo rotulo={'2. ' + (f.modo === 'total' ? 'Valor total (R$)' : 'Valor por pessoa (R$)')}><input inputMode="decimal" value={f.valor} onChange={(e) => setF({ ...f, valor: e.target.value })} required /></Campo>
+        {previa !== null && <span className="chip ok" style={{ alignSelf: 'flex-start' }}>{reais(previa)} por pessoa · {f.sel.length} pessoa(s)</span>}
+        <div className="grade2">
+          <Campo rotulo="3. Vencimento"><input type="date" value={f.venc} onChange={(e) => setF({ ...f, venc: e.target.value })} /></Campo>
+          <Campo rotulo="Entra na conta"><select value={f.conta} onChange={(e) => setF({ ...f, conta: e.target.value })}>{contas.map((c) => <option key={c.conta_id} value={c.conta_id}>{c.nome}</option>)}</select></Campo>
+        </div>
+        <div className="linha entre"><b className="small">4. Quem paga? Toque para tirar ou voltar a incluir</b><button type="button" className="btn mini" onClick={() => setF({ ...f, sel: ativos })}>Incluir todos</button></div>
+        <div className="linha quebra">
+          {ativos.map((id) => <button type="button" key={id} className={'btn mini' + (f.sel.includes(id) ? ' primario' : '')} onClick={() => setF({ ...f, sel: f.sel.includes(id) ? f.sel.filter((x) => x !== id) : [...f.sel, id] })}>{nomeDoMembro(app, id)}</button>)}
+        </div>
+        <button className="btn primario">Criar cobrança</button>
+      </form>
+    </Folha>
   )
 }
 
