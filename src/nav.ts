@@ -8,7 +8,7 @@ export interface GrupoNav { nome: string; itens: ItemNav[] }
 // Telas já construídas no formato do protótipo (as outras ainda não aparecem no menu)
 export const PRONTAS = new Set<string>([
   'painel', 'relat', 'escala', 'mis', 'membros', 'fin', 'cal', 'tickets', 'portaria', 'festa',
-  'pint', 'minhas', 'cobr', 'ingr',
+  'pint', 'minhas', 'cobr', 'ingr', 'regras', 'perso', 'regrasler', 'perfil',
 ])
 
 export const TITULOS: Record<string, [string, string]> = {

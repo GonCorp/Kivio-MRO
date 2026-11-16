@@ -27,6 +27,8 @@ export interface Republica {
   codigo_verificacao: string
   teto_multa: number | null
   espacamento_dias: number
+  foto_missao: 'desligada' | 'opcional' | 'obrigatoria'
+  cor: string | null
 }
 
 export interface Membro {

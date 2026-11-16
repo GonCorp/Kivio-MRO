@@ -19,6 +19,9 @@ import Ingressos, { Portaria } from './screens/Ingressos'
 import Relatorios from './screens/Relatorios'
 import Painel from './screens/Painel'
 import EmConstrucao from './screens/EmConstrucao'
+import Regras, { RegrasLeitura } from './screens/Regras'
+import Personalizar from './screens/Personalizar'
+import { aplicar } from './tema'
 
 interface Dados {
   perfil: Perfil
@@ -100,6 +103,8 @@ export default function App() {
     setVista('')
   }, [])
 
+  const corRep = dados?.republica?.cor ?? null
+  useEffect(() => { aplicar(corRep) }, [corRep])
   const ctx: Contexto | null = useMemo(() => {
     if (!dados || !uid) return null
     const ehLider = dados.membro?.papel === 'lider'
@@ -183,6 +188,9 @@ export default function App() {
           {(atual === 'tickets' || atual === 'ingr') && <Ingressos />}
           {atual === 'portaria' && <Portaria />}
           {atual === 'festa' && <EmConstrucao />}
+          {atual === 'regras' && <Regras />}
+          {atual === 'regrasler' && <RegrasLeitura />}
+          {(atual === 'perso' || atual === 'perfil') && <Personalizar />}
         </main>
       </div>
     )
