@@ -3,7 +3,7 @@ import type { Session } from '@supabase/supabase-js'
 import { configurado, supabase } from './lib/supabase'
 import { Ctx, type Contexto } from './lib/contexto'
 import type { Membro, Perfil, Republica } from './lib/tipos'
-import { Ico } from './components'
+import { Ico, Foto } from './components'
 import { montarNav, primeiraVista, TITULOS, type Vista } from './nav'
 import Auth from './screens/Auth'
 import Onboarding from './screens/Onboarding'
@@ -29,6 +29,7 @@ interface Dados {
   republica: Republica | null
   membros: Membro[]
   nomes: Record<string, string>
+  fotos: Record<string, string | null>
   recursos: string[]
 }
 
@@ -66,6 +67,7 @@ export default function App() {
     let republica: Republica | null = null
     let membros: Membro[] = []
     let nomes: Record<string, string> = {}
+    let fotos: Record<string, string | null> = {}
     let recursos: string[] = []
     if (meu) {
       const { data: r } = await supabase.from('republicas').select('*').eq('id', meu.republica_id).single()
@@ -73,15 +75,17 @@ export default function App() {
       if (republica?.ativo) {
         const [ms, ps, rc] = await Promise.all([
           supabase.from('membros').select('*').eq('republica_id', meu.republica_id).eq('ativo', true),
-          supabase.from('profiles').select('id,nome'),
+          supabase.from('profiles').select('id,nome,foto_path'),
           supabase.rpc('recursos_da_republica', { p_rep: meu.republica_id }),
         ])
         recursos = (rc.data || []) as string[]
         membros = (ms.data || []) as Membro[]
-        nomes = Object.fromEntries(((ps.data || []) as { id: string; nome: string }[]).map((x) => [x.id, x.nome]))
+        const lp = (ps.data || []) as { id: string; nome: string; foto_path: string | null }[]
+        nomes = Object.fromEntries(lp.map((x) => [x.id, x.nome]))
+        fotos = Object.fromEntries(lp.map((x) => [x.id, x.foto_path]))
       }
     }
-    setDados({ perfil: p as Perfil, membro: (meu as Membro) || null, republica, membros, nomes, recursos })
+    setDados({ perfil: p as Perfil, membro: (meu as Membro) || null, republica, membros, nomes, fotos, recursos })
   }, [uid])
 
   useEffect(() => { recarregar() }, [recarregar])
@@ -148,7 +152,7 @@ export default function App() {
       <div className="shell">
         <aside className={'lado' + (menuAberto ? ' aberto' : '')}>
           <div className="rep">
-            <div className="marca">{(ctx.republica?.nome || 'K').charAt(0).toUpperCase()}</div>
+            <div className="marca"><Foto path={ctx.republica?.logo_path} letra={(ctx.republica?.nome || 'K').charAt(0).toUpperCase()} /></div>
             <div style={{ minWidth: 0 }}><b>{ctx.republica?.nome || 'Kivio Digital'}</b><span className="muted small">no MRO</span></div>
           </div>
           <nav aria-label="Menu">

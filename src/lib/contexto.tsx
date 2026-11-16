@@ -9,6 +9,7 @@ export interface Contexto {
   republica: Republica | null
   membros: Membro[]
   nomes: Record<string, string> // user_id -> nome
+  fotos: Record<string, string | null> // user_id -> caminho da foto
   podeGerir: boolean // líder ou função "multas"
   ehLider: boolean
   funcao: (f: string) => boolean // líder ou quem recebeu a função

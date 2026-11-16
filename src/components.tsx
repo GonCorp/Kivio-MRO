@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react'
+import { useFotoUrl } from './lib/fotos'
 
 export function Folha({ titulo, onFechar, children }: { titulo: string; onFechar: () => void; children: ReactNode }) {
   useEffect(() => {
@@ -70,4 +71,10 @@ const ICO: Record<string, string> = {
 }
 export function Ico({ nome }: { nome: string }) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: ICO[nome] || '' }} />
+}
+
+// Foto guardada no Storage; sem foto, mostra a inicial.
+export function Foto({ path, letra }: { path?: string | null; letra: string }) {
+  const url = useFotoUrl(path)
+  return url ? <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <>{letra}</>
 }

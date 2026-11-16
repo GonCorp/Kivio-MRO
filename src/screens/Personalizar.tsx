@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { Foto } from '../components'
+import { enviarFoto } from '../lib/fotos'
 import { supabase } from '../lib/supabase'
 import { useApp } from '../lib/contexto'
 import TrocarSenha from '../TrocarSenha'
@@ -28,6 +30,26 @@ export default function Personalizar() {
     await app.recarregar(); app.avisar('Nome salvo.')
   }
   const letra = (rep.nome || 'R').trim().charAt(0).toUpperCase()
+  const inLogo = useRef<HTMLInputElement>(null)
+  const inPerfil = useRef<HTMLInputElement>(null)
+  const [env, setEnv] = useState(false)
+  const meuNome = app.nomes[app.userId] || 'Eu'
+  async function trocar(arq: File | undefined, tipo: 'logo' | 'perfil') {
+    if (!arq) return
+    setEnv(true)
+    try {
+      const path = await enviarFoto(rep.id, tipo, arq, tipo === 'logo' ? 512 : 400)
+      const { error } = tipo === 'logo' ? await supabase.rpc('definir_logo', { p_rep: rep.id, p_path: path }) : await supabase.rpc('definir_foto_perfil', { p_rep: rep.id, p_path: path })
+      if (error) throw new Error(error.message)
+      await app.recarregar(); app.avisar(tipo === 'logo' ? 'Foto da república salva.' : 'Sua foto foi salva.')
+    } catch (e) { app.avisar((e as Error).message, true) }
+    setEnv(false)
+  }
+  async function tirar(tipo: 'logo' | 'perfil') {
+    const { error } = tipo === 'logo' ? await supabase.rpc('definir_logo', { p_rep: rep.id, p_path: null }) : await supabase.rpc('definir_foto_perfil', { p_rep: rep.id, p_path: null })
+    if (error) return app.avisar(error.message, true)
+    await app.recarregar(); app.avisar('Foto removida.')
+  }
 
   return (
     <div className="cartoes" style={{ alignItems: 'flex-start' }}>
@@ -50,6 +72,16 @@ export default function Personalizar() {
           </div>
         </div>
         <div className="bloco">
+          <h2>Sua foto</h2>
+          <span className="small muted">Aparece para os colegas da república. Pode ser tirada na hora pelo celular.</span>
+          <div className="linha">
+            <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--acento)', color: 'var(--sobre-acento)', display: 'grid', placeItems: 'center', fontWeight: 800, fontSize: 26, overflow: 'hidden' }}><Foto path={app.fotos[app.userId]} letra={meuNome.charAt(0).toUpperCase()} /></div>
+            <input ref={inPerfil} type="file" accept="image/*" hidden onChange={(e) => { trocar(e.target.files?.[0], 'perfil'); e.target.value = '' }} />
+            <button className="btn" disabled={env} onClick={() => inPerfil.current?.click()}>{env ? 'Enviando…' : app.fotos[app.userId] ? 'Trocar foto' : 'Escolher foto'}</button>
+            {app.fotos[app.userId] && <button className="btn mini" onClick={() => tirar('perfil')}>Remover</button>}
+          </div>
+        </div>
+        <div className="bloco">
           <h2>Segurança</h2>
           <button className="btn" onClick={() => setSenha(true)}>Trocar minha senha</button>
         </div>
@@ -61,13 +93,17 @@ export default function Personalizar() {
         <span className="small" style={{ fontWeight: 600 }}>Região: {rep.cidade}</span>
         <input value={nome} disabled={!lider} aria-label="Nome da república" style={{ fontWeight: 700 }} onChange={(e) => setNome(e.target.value)} />
         <div className="linha">
-          <div style={{ width: 64, height: 64, borderRadius: 16, background: 'var(--acento)', color: 'var(--sobre-acento)', display: 'grid', placeItems: 'center', fontWeight: 800, fontSize: 26 }}>{letra}</div>
-          <span className="small muted">A foto da república chega em breve; por enquanto usamos a inicial do nome.</span>
+          <div style={{ width: 64, height: 64, borderRadius: 16, background: 'var(--acento)', color: 'var(--sobre-acento)', display: 'grid', placeItems: 'center', fontWeight: 800, fontSize: 26, overflow: 'hidden', flex: 'none' }}><Foto path={rep.logo_path} letra={letra} /></div>
+          {lider ? <>
+            <input ref={inLogo} type="file" accept="image/*" hidden onChange={(e) => { trocar(e.target.files?.[0], 'logo'); e.target.value = '' }} />
+            <button className="btn" disabled={env} onClick={() => inLogo.current?.click()}>{env ? 'Enviando…' : rep.logo_path ? 'Trocar foto' : 'Escolher foto da república'}</button>
+            {rep.logo_path && <button className="btn mini" onClick={() => tirar('logo')}>Remover</button>}
+          </> : <span className="small muted">A foto da república é escolhida pelo líder.</span>}
         </div>
         {lider ? <button className="btn primario" disabled={nome.trim() === rep.nome} onClick={salvarNome}>Salvar nome</button> : <span className="small muted">Só o líder muda a identidade da república.</span>}
         <div className="card" style={{ background: 'var(--suave)' }}>
           <span className="small muted" style={{ fontWeight: 800, letterSpacing: '.04em' }}>ASSIM APARECE NO CALENDÁRIO DAS OUTRAS REPÚBLICAS</span>
-          <div className="linha"><div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--acento)', color: 'var(--sobre-acento)', display: 'grid', placeItems: 'center', fontWeight: 800 }}>{letra}</div><b>{nome || 'Sua república'}</b></div>
+          <div className="linha"><div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--acento)', color: 'var(--sobre-acento)', display: 'grid', placeItems: 'center', fontWeight: 800, overflow: 'hidden' }}><Foto path={rep.logo_path} letra={letra} /></div><b>{nome || 'Sua república'}</b></div>
         </div>
       </div>
       {senha && <TrocarSenha email={app.email} avisar={app.avisar} onFechar={() => setSenha(false)} />}

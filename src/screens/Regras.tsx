@@ -108,7 +108,7 @@ export default function Regras() {
           <h2>Foto de comprovação</h2>
           <span className="small muted">O integrante manda uma foto ao concluir a tarefa, como no grupo do WhatsApp. O líder vê a foto no quadro de missões.</span>
           <div className="linha quebra">{FOTO.map(([k, n]) => <button key={k} className={'btn mini' + (foto === k ? ' primario' : '')} onClick={() => setFoto(k as typeof foto)}>{n}</button>)}</div>
-          {foto !== 'desligada' && <span className="small" style={{ color: 'var(--aviso-fg)' }}>A regra já fica salva. O envio da foto pelo app está sendo preparado e chega em breve.</span>}
+          
         </div>
         <div className="bloco">
           <h2>Pedido de espaçamento entre festas</h2>
@@ -125,8 +125,8 @@ export default function Regras() {
         <h2>Comparação entre integrantes</h2>
         <span className="small muted">No painel de cada integrante há um quadro que compara as missões dele com a média da casa e com os colegas. Escolha se os colegas aparecem com nome ou só como “Colega 1, 2, 3”.</span>
         <div className="linha quebra">
-          <button className={'btn mini' + (!rep.comparar_nomes ? ' primario' : '')} onClick={() => comparacao(false)}>Sem nomes (recomendado)</button>
-          <button className={'btn mini' + (rep.comparar_nomes ? ' primario' : '')} onClick={() => comparacao(true)}>Com nomes</button>
+          <button className={'btn mini' + (rep.comparar_nomes ? ' primario' : '')} onClick={() => comparacao(true)}>Com nomes (padrão)</button>
+          <button className={'btn mini' + (!rep.comparar_nomes ? ' primario' : '')} onClick={() => comparacao(false)}>Sem nomes</button>
         </div>
       </div>
 

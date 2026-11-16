@@ -12,6 +12,7 @@ export interface Perfil {
   nome: string
   whatsapp: string | null
   is_super_admin: boolean
+  foto_path?: string | null
 }
 
 export interface Republica {
@@ -30,6 +31,7 @@ export interface Republica {
   foto_missao: 'desligada' | 'opcional' | 'obrigatoria'
   cor: string | null
   comparar_nomes: boolean
+  logo_path?: string | null
 }
 
 export interface Membro {

@@ -4,6 +4,7 @@ import { nomeDoMembro, useApp } from '../lib/contexto'
 import type { Ocorrencia, StatusOc, Tarefa } from '../lib/tipos'
 import { dataCurta, diaSemana, hoje, nomeDia, nomeDiaCurto, segundaDaSemana, somarDias } from '../lib/datas'
 import { Campo, Folha } from '../components'
+import { enviarFoto, useFotoUrl } from '../lib/fotos'
 
 export const ROTULO: Record<StatusOc, { t: string; c: string }> = {
   pendente: { t: 'Pendente', c: '' },
@@ -23,13 +24,17 @@ export default function MinhasMissoes() {
   const [carregando, setCarregando] = useState(true)
   const [nova, setNova] = useState(false)
   const [justificando, setJustificando] = useState<Ocorrencia | null>(null)
+  const [concluindo, setConcluindo] = useState<Ocorrencia | null>(null)
+  const [fotos, setFotos] = useState<Record<string, string>>({})
   const meuMembroId = app.membro?.id
 
   const carregar = useCallback(async () => {
-    const [t, o] = await Promise.all([
+    const [t, o, f] = await Promise.all([
       supabase.from('tarefas').select('*').eq('republica_id', rep.id),
       supabase.rpc('ocorrencias', { p_rep: rep.id, p_de: semana, p_ate: somarDias(semana, 6) }),
+      supabase.from('execucoes').select('tarefa_id,data,foto_path').eq('republica_id', rep.id).gte('data', semana).lte('data', somarDias(semana, 6)).not('foto_path', 'is', null),
     ])
+    setFotos(Object.fromEntries(((f.data || []) as { tarefa_id: string; data: string; foto_path: string }[]).map((x) => [x.tarefa_id + x.data, x.foto_path])))
     if (t.error || o.error) app.avisar((t.error || o.error)!.message, true)
     setTarefas((t.data || []) as Tarefa[])
     setOc((o.data || []) as Ocorrencia[])
@@ -111,12 +116,13 @@ export default function MinhasMissoes() {
                     </div>
                     <span className={'chip ' + r.c}>{r.t}</span>
                   </div>
+                  {fotos[o.tarefa_id + o.data] && <Comprovante path={fotos[o.tarefa_id + o.data]} />}
                   {o.motivo && (o.status === 'em_analise' || o.status === 'justificada') && (
                     <p className="small muted">Motivo: {o.motivo}</p>
                   )}
                   <div className="acoes">
                     {(o.status === 'pendente' || o.status === 'falta') && (minha && d === h || app.podeGerir) && d <= h && (
-                      <button className="btn mini primario" onClick={() => acao('marcar_feita', { p_tarefa: o.tarefa_id, p_data: o.data }, 'Marcada como feita.')}>
+                      <button className="btn mini primario" onClick={() => (rep.foto_missao !== 'desligada' && minha ? setConcluindo(o) : acao('marcar_feita', { p_tarefa: o.tarefa_id, p_data: o.data }, 'Marcada como feita.'))}>
                         Marcar como feita
                       </button>
                     )}
@@ -144,6 +150,14 @@ export default function MinhasMissoes() {
       })}
 
       {nova && <NovaTarefa onFechar={() => setNova(false)} onCriada={() => { setNova(false); carregar() }} />}
+      {concluindo && (
+        <Concluir
+          oc={concluindo}
+          titulo={porId.get(concluindo.tarefa_id)?.titulo || 'Tarefa'}
+          onFechar={() => setConcluindo(null)}
+          onFeita={() => { setConcluindo(null); carregar() }}
+        />
+      )}
       {justificando && (
         <Justificar
           oc={justificando}
@@ -153,6 +167,47 @@ export default function MinhasMissoes() {
         />
       )}
     </>
+  )
+}
+
+function Comprovante({ path }: { path: string }) {
+  const url = useFotoUrl(path)
+  const [grande, setGrande] = useState(false)
+  if (!url) return null
+  return (
+    <>
+      <img src={url} alt="Foto da tarefa feita" onClick={() => setGrande(true)} style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 10, cursor: 'zoom-in', marginTop: 6 }} />
+      {grande && <Folha titulo="Foto da tarefa" onFechar={() => setGrande(false)}><img src={url} alt="Foto da tarefa feita" style={{ width: '100%', borderRadius: 12 }} /></Folha>}
+    </>
+  )
+}
+
+function Concluir({ oc, titulo, onFechar, onFeita }: { oc: Ocorrencia; titulo: string; onFechar: () => void; onFeita: () => void }) {
+  const app = useApp()
+  const obrig = app.republica!.foto_missao === 'obrigatoria'
+  const [arq, setArq] = useState<File | null>(null)
+  const [previa, setPrevia] = useState<string | null>(null)
+  const [ocupado, setOcupado] = useState(false)
+  function escolher(f: File | undefined) { setArq(f || null); setPrevia(f ? URL.createObjectURL(f) : null) }
+  async function enviar() {
+    setOcupado(true)
+    try {
+      const path = arq ? await enviarFoto(app.republica!.id, 'missoes', arq) : null
+      const { error } = await supabase.rpc('marcar_feita_foto', { p_tarefa: oc.tarefa_id, p_data: oc.data, p_path: path })
+      if (error) throw new Error(error.message)
+      app.avisar('Tarefa marcada como feita.')
+      onFeita()
+    } catch (e) { app.avisar((e as Error).message, true) }
+    setOcupado(false)
+  }
+  return (
+    <Folha titulo="Concluir tarefa" onFechar={onFechar}>
+      <p className="muted">{titulo} · {dataCurta(oc.data)}. {obrig ? 'A república pede uma foto para concluir.' : 'A foto é opcional, mas ajuda o líder a conferir.'}</p>
+      <input id="foto-tarefa" type="file" accept="image/*" capture="environment" hidden onChange={(e) => escolher(e.target.files?.[0])} />
+      <label htmlFor="foto-tarefa" className="btn" style={{ textAlign: 'center' }}>{arq ? 'Trocar foto' : 'Tirar ou escolher foto'}</label>
+      {previa && <img src={previa} alt="Prévia" style={{ width: '100%', maxHeight: 280, objectFit: 'cover', borderRadius: 12 }} />}
+      <button className="btn primario cheio" disabled={ocupado || (obrig && !arq)} onClick={enviar}>{ocupado ? 'Enviando…' : 'Marcar como feita'}</button>
+    </Folha>
   )
 }
 
