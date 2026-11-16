@@ -12,8 +12,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Consultar o banco
         run: |
-          KEY=$(grep '^VITE_SUPABASE_ANON_KEY=' .env.production | cut -d= -f2-)
-          URL=$(grep '^VITE_SUPABASE_URL=' .env.production | cut -d= -f2-)
+          KEY=$(grep -o 'eyJ[A-Za-z0-9_.-]*' src/lib/supabase.ts | head -1)
+          URL=$(grep -o "https://[a-z0-9]*\.supabase\.co" src/lib/supabase.ts | head -1)
           code=$(curl -s -o /tmp/r.json -w '%{http_code}' --retry 3 --retry-delay 20 "$URL/rest/v1/cidades?select=nome&limit=1" -H "apikey: $KEY" -H "Authorization: Bearer $KEY")
           echo "HTTP $code"; cat /tmp/r.json
           [ "$code" = "200" ]
